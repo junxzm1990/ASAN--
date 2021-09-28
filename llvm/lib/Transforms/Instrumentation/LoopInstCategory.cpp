@@ -73,13 +73,12 @@ enum addrType checkAddrType(Value *addr, std::vector<Value *> backs, std::vector
     return IBIO;
   }
 
-  // Check if we encounterd previously processed address
-  // TODO: Maybe improve this algorithm later
+  // Check if encounterd previously processed address
   if (std::find(processedAddr.begin(), processedAddr.end(), addr) != processedAddr.end()) {
     return VBVO;
   }
 
-  // Check if currentn address is used by other functions
+  // Check if current address is used by other functions
   for (User *U : addr->users()) {
     if (CallInst *Call_Inst = dyn_cast<CallInst>(U)) {
       if (!L->contains(Call_Inst)) {

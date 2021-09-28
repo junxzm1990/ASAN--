@@ -71,6 +71,8 @@
 // ASAN-- Scalable Value
 #define RZ_SIZE 16
 #define CHECK_RANGE 64
+#define CHECK_RANGE_LOOP 32
+#define MAX_STEP_SIZE 8
 
 using namespace llvm;
 
@@ -531,6 +533,9 @@ struct AddressSanitizer : public FunctionPass {
                                      Instruction *I, Instruction *PrevI, bool UseCalls,
                                      const DataLayout &DL);
   void InvariantOptimizeHandler(Loop *L, std::set<Instruction *> &optimized, 
+                        Function &F, ObjectSizeOffsetVisitor &ObjSizeVis, 
+                        Instruction *Inst, bool UseCalls);
+  void MonotonicOptimizeHandler(Loop *L, std::set<Instruction *> &optimized, 
                         Function &F, ObjectSizeOffsetVisitor &ObjSizeVis, 
                         Instruction *Inst, bool UseCalls);
 
@@ -2928,6 +2933,192 @@ void AddressSanitizer::InvariantOptimizeHandler(Loop *L, std::set<Instruction *>
   return;
 }
 
+enum SCEVType SCEVTypeCalculation(std::vector<SCEVType> SCEVTypeCombination) {
+
+  if (std::find(SCEVTypeCombination.begin(), SCEVTypeCombination.end(), SEUnknown) != SCEVTypeCombination.end()) {
+    return SEUnknown;
+  }
+
+  for (auto type : SCEVTypeCombination) {
+    if (type == SEIncrease) {
+      return SEIncrease;
+    } 
+    if (type == SEDecrease) {
+      return SEDecrease;
+    } 
+  }
+  return SEUnknown;
+}
+
+enum SCEVType getInitValueFromSCEV(const SCEV *Expr, Value **initValue, ScalarEvolution *SE, Loop *L, int64_t &initIndex, int64_t &stepSize) {
+
+  if (const SCEVConstant *SC = dyn_cast<SCEVConstant>(Expr)) {
+    *initValue = SC->getValue();
+    return SEConstant;
+  }
+
+  if (const SCEVAddRecExpr *AddRec = dyn_cast<SCEVAddRecExpr>(Expr)) {
+    const SCEV *start = AddRec->getStart();
+    if (const SCEVConstant *init = dyn_cast<SCEVConstant>(start)) {
+      auto *index = init->getValue();
+      int64_t indexint = index->getSExtValue();
+      initIndex = indexint;
+    }
+    SCEVType initType = getInitValueFromSCEV(start, initValue, SE, L, initIndex, stepSize);
+    if (initType == SEUnknown) {
+      return SEUnknown;
+    }
+
+    const SCEV *Step = AddRec->getStepRecurrence(*SE);
+    if (const SCEVConstant *SC = dyn_cast<SCEVConstant>(Step)) {
+      auto *StepRecurrence = SC->getValue();
+      int64_t StepRecurrenceInt = StepRecurrence->getSExtValue();
+      stepSize = StepRecurrenceInt;
+      if (StepRecurrenceInt < 0) {
+        return SEDecrease;
+      }
+      if (StepRecurrenceInt > 0) {
+        return SEIncrease;  
+      }
+    }
+    return SEUnknown;
+  }
+
+  if (const SCEVUnknown *SU = dyn_cast<SCEVUnknown>(Expr)) {
+    *initValue = SU->getValue();
+    std::vector<Value *> backs;
+    std::vector<Value *> processedAddr;
+
+    if (checkAddrType(*initValue, backs, processedAddr, SE, L) == IBIO) {
+      return SELoopInvariant;
+    }
+    return SEUnknown;
+  }
+
+  if (const SCEVAddExpr *AddExpr = dyn_cast<SCEVAddExpr>(Expr)) {
+    std::vector<SCEVType> SCEVTypeCombination;
+    SCEVTypeCombination.push_back(getInitValueFromSCEV(AddExpr->getOperand(0), initValue, SE, L, initIndex, stepSize));
+    for (unsigned i = 1, e = AddExpr->getNumOperands(); i != e; ++i) {
+      SCEVTypeCombination.push_back(getInitValueFromSCEV(AddExpr->getOperand(i), initValue, SE, L, initIndex, stepSize));
+    }
+    return SCEVTypeCalculation(SCEVTypeCombination);
+  }
+
+  if (const SCEVMulExpr *MulExpr = dyn_cast<SCEVMulExpr>(Expr)) {
+    std::vector<SCEVType> SCEVTypeCombination;
+    SCEVTypeCombination.push_back(getInitValueFromSCEV(MulExpr->getOperand(0), initValue, SE, L, initIndex, stepSize));
+    for (unsigned i = 1, e = MulExpr->getNumOperands(); i != e; ++i) {
+      SCEVTypeCombination.push_back(getInitValueFromSCEV(MulExpr->getOperand(i), initValue, SE, L, initIndex, stepSize));
+    }
+    return SCEVTypeCalculation(SCEVTypeCombination);
+  }
+
+  if (const SCEVUDivExpr *UDivExpr = dyn_cast<SCEVUDivExpr>(Expr)) {
+    std::vector<SCEVType> SCEVTypeCombination;
+    SCEVTypeCombination.push_back(getInitValueFromSCEV(UDivExpr->getLHS(), initValue, SE, L, initIndex, stepSize));
+    SCEVTypeCombination.push_back(getInitValueFromSCEV(UDivExpr->getRHS(), initValue, SE, L, initIndex, stepSize));
+    return SCEVTypeCalculation(SCEVTypeCombination);
+  }
+
+  if (const SCEVSMaxExpr *SMaxExpr = dyn_cast<SCEVSMaxExpr>(Expr)) {
+    std::vector<SCEVType> SCEVTypeCombination;
+    SCEVTypeCombination.push_back(getInitValueFromSCEV(SMaxExpr->getOperand(0), initValue, SE, L, initIndex, stepSize));
+    SCEVTypeCombination.push_back(getInitValueFromSCEV(SMaxExpr->getOperand(1), initValue, SE, L, initIndex, stepSize));
+    return SCEVTypeCalculation(SCEVTypeCombination);
+  }
+
+  if (const SCEVUMaxExpr *UMaxExpr = dyn_cast<SCEVUMaxExpr>(Expr)) {
+    std::vector<SCEVType> SCEVTypeCombination;
+    SCEVTypeCombination.push_back(getInitValueFromSCEV(UMaxExpr->getOperand(0), initValue, SE, L, initIndex, stepSize));
+    SCEVTypeCombination.push_back(getInitValueFromSCEV(UMaxExpr->getOperand(1), initValue, SE, L, initIndex, stepSize));
+    return SCEVTypeCalculation(SCEVTypeCombination);
+  }
+
+  if (const SCEVTruncateExpr *Truncate = dyn_cast<SCEVTruncateExpr>(Expr)) {
+    const SCEV *op = Truncate->getOperand();
+    SCEVType TruncateSCEVType = getInitValueFromSCEV(op, initValue, SE, L, initIndex, stepSize);
+    // The bit size of the value must be larger than the bit size of the destination type, ty2.
+    return TruncateSCEVType;
+  }
+
+  if (const SCEVZeroExtendExpr *ZeroExtend = dyn_cast<SCEVZeroExtendExpr>(Expr)) {
+    const SCEV *op = ZeroExtend->getOperand();
+    SCEVType ZeroExtendSCEVType = getInitValueFromSCEV(op, initValue, SE, L, initIndex, stepSize);
+    // The bit size of the value must be smaller than the bit size of the destination type, ty2.
+    return ZeroExtendSCEVType;
+  }
+
+  if (const SCEVSignExtendExpr *SignExtend = dyn_cast<SCEVSignExtendExpr>(Expr)) {
+    const SCEV *op = SignExtend->getOperand();
+    SCEVType SignExtendSCEVType = getInitValueFromSCEV(op, initValue, SE, L, initIndex, stepSize);
+    // The bit size of the value must be smaller than the bit size of the destination type, ty2.
+    return SignExtendSCEVType;
+  }
+
+  if (const SCEVCouldNotCompute *CNC = dyn_cast<SCEVCouldNotCompute>(Expr)) {
+    return SEUnknown;
+  }
+
+  return SEUnknown;
+}
+
+void AddressSanitizer::MonotonicOptimizeHandler(Loop *L, std::set<Instruction *> &optimized, 
+                        Function &F, ObjectSizeOffsetVisitor &ObjSizeVis, 
+                        Instruction *Inst, bool UseCalls) {
+  bool IsWrite;
+	unsigned Alignment;
+	uint64_t TypeSize;
+  auto DT = DominatorTree(F);
+  ScalarEvolution *SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
+
+  Value *addr = isInterestingMemoryAccess(Inst, &IsWrite, &TypeSize, &Alignment);
+  if (!addr) 
+    return;
+  
+  const SCEV *PtrSCEVA = SE->getSCEV(addr);
+  
+  Value *initValue;
+
+  int64_t initIndex;
+
+  int64_t stepSize;
+
+  SCEVType initType = getInitValueFromSCEV(PtrSCEVA, &initValue, SE, L, initIndex, stepSize);
+
+  if (initType == SEUnknown) {
+    return;
+  }
+
+  if (stepSize > MAX_STEP_SIZE) {
+    return;
+  }
+
+  IRBuilder<> IRBinsertCheck(Inst);
+
+  Value *AddrLong = IRBinsertCheck.CreatePointerCast(addr, IntptrTy);
+
+  Value *RHS = ConstantInt::get(IntptrTy, CHECK_RANGE_LOOP);
+
+  Value *ModInst = IRBinsertCheck.CreateURem(AddrLong, RHS);
+
+  Value *StepSizeLong = ConstantInt::get(IntptrTy, std::abs(stepSize));
+
+  Value *Cmp = IRBinsertCheck.CreateICmpULT(ModInst, StepSizeLong);
+
+  Instruction *CheckTerm = SplitBlockAndInsertIfThen(Cmp, Inst, false);
+
+  IRBuilder<> IRBasanCheck(CheckTerm);
+
+  unsigned Granularity = 1 << Mapping.Scale;
+  if ((TypeSize == 8 || TypeSize == 16 || TypeSize == 32 || TypeSize == 64 || TypeSize == 128) && (Alignment >= Granularity || Alignment == 0 || Alignment >= TypeSize / 8)) {
+    instrumentAddress(CheckTerm, CheckTerm, addr, TypeSize, IsWrite, nullptr, UseCalls, 0);
+  } else {
+    instrumentUnusualSizeOrAlignment(CheckTerm, CheckTerm, addr, TypeSize, IsWrite, nullptr, UseCalls, 0);
+  }
+  optimized.insert(Inst);
+  return;
+}
+
 enum addrType AddressSanitizer::loopOptimizationCategorise(Function &F, Loop *L, Instruction *Inst, SmallVector<Instruction *, 16> &ToInstrument) {
   
   bool IsWrite;
@@ -2974,6 +3165,8 @@ void AddressSanitizer::loopOptimization(Function &F, SmallVector<Instruction *, 
         /* optimized.insert(Inst); */
 
       } else {
+        // ASAN-- "Grouping  Monotonic  Checks" Optimization Enabled
+        MonotonicOptimizeHandler(L, optimized, F, ObjSizeVis, Inst, UseCalls);
         /* optimized.insert(Inst); */
       }
 
