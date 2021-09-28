@@ -1,5 +1,8 @@
 add_llvm_library(LLVMInstrumentation
   AddressSanitizer.cpp
+  Slice.cpp
+  LoopInstCategory.cpp
+  Util.cpp
   BoundsChecking.cpp
   DataFlowSanitizer.cpp
   GCOVProfiling.cpp
