@@ -193,7 +193,7 @@ static cl::opt<bool> ClGlobals("asan-globals",
                                cl::init(true));
 static cl::opt<bool> ClInitializers("asan-initialization-order",
                                     cl::desc("Handle C++ initializer order"),
-                                    cl::Hidden, cl::init(true));
+                                    cl::Hidden, cl::init(false)); // ASAN-- "Removing Unsatisfiable Checks" Optimization Enabled
 static cl::opt<bool> ClInvalidPointerPairs(
     "asan-detect-invalid-pointer-pair",
     cl::desc("Instrument <, <=, >, >=, - with pointer operands"), cl::Hidden,
@@ -245,7 +245,7 @@ static cl::opt<bool> ClOptGlobals("asan-opt-globals",
                                   cl::Hidden, cl::init(true));
 static cl::opt<bool> ClOptStack(
     "asan-opt-stack", cl::desc("Don't instrument scalar stack variables"),
-    cl::Hidden, cl::init(false));
+    cl::Hidden, cl::init(true)); // ASAN-- "Removing Unsatisfiable Checks" Optimization Enabled
 
 static cl::opt<bool> ClDynamicAllocaStack(
     "asan-stack-dynamic-alloca",
@@ -527,6 +527,10 @@ struct AddressSanitizer : public FunctionPass {
   void instrumentMemIntrinsic(MemIntrinsic *MI);
   Value *memToShadow(Value *Shadow, IRBuilder<> &IRB);
   bool runOnFunction(Function &F) override;
+  // ASAN-- Helper Functions
+  bool isSafeAccessBoost(ObjectSizeOffsetVisitor &ObjSizeVis, Instruction *IndexInst, Value *Addr, Function *F) const;
+
+
   bool maybeInsertAsanInitAtFunctionEntry(Function &F);
   void maybeInsertDynamicShadowAtFunctionEntry(Function &F);
   void markEscapedLocalAllocas(Function &F);
@@ -1237,19 +1241,34 @@ void AddressSanitizer::instrumentMop(ObjectSizeOffsetVisitor &ObjSizeVis,
     // If initialization order checking is disabled, a simple access to a
     // dynamically initialized global is always valid.
     GlobalVariable *G = dyn_cast<GlobalVariable>(GetUnderlyingObject(Addr, DL));
-    if (G && (!ClInitializers || GlobalIsLinkerInitialized(G)) &&
-        isSafeAccess(ObjSizeVis, Addr, TypeSize)) {
-      NumOptimizedAccessesToGlobalVar++;
-      return;
+
+    if (G && (!ClInitializers || GlobalIsLinkerInitialized(G))) {
+
+      if (isSafeAccess(ObjSizeVis, Addr, TypeSize)) {
+        NumOptimizedAccessesToGlobalVar++;
+        return;
+      }
+      // ASAN-- "Removing Unsatisfiable Checks" Optimization Enabled
+      if (isSafeAccessBoost(ObjSizeVis, I, Addr, I->getFunction())) {
+        NumOptimizedAccessesToGlobalVar++;
+        return;
+      }
     }
   }
 
   if (ClOpt && ClOptStack) {
     // A direct inbounds access to a stack variable is always valid.
-    if (isa<AllocaInst>(GetUnderlyingObject(Addr, DL)) &&
-        isSafeAccess(ObjSizeVis, Addr, TypeSize)) {
-      NumOptimizedAccessesToStackVar++;
-      return;
+    if (isa<AllocaInst>(GetUnderlyingObject(Addr, DL))) {
+
+      if (isSafeAccess(ObjSizeVis, Addr, TypeSize)) {
+        NumOptimizedAccessesToStackVar++;
+        return;
+      }
+      // ASAN-- "Removing Unsatisfiable Checks" Optimization Enabled
+      if (isSafeAccessBoost(ObjSizeVis, I, Addr, I->getFunction())) {
+        NumOptimizedAccessesToStackVar++;
+        return;
+      } 
     }
   }
 
@@ -2805,4 +2824,76 @@ bool AddressSanitizer::isSafeAccess(ObjectSizeOffsetVisitor &ObjSizeVis,
   // . Size - Offset >= NeededSize  (unsigned)
   return Offset >= 0 && Size >= uint64_t(Offset) &&
          Size - uint64_t(Offset) >= TypeSize / 8;
+}
+
+bool AddressSanitizer::isSafeAccessBoost(ObjectSizeOffsetVisitor &ObjSizeVis, Instruction *IndexInst, Value *Addr, Function *F) const {
+
+  auto DT = DominatorTree(*F);
+
+  if (GetElementPtrInst *Gep_Inst = dyn_cast<GetElementPtrInst>(Addr)) {
+
+    for (auto& Index : make_range(Gep_Inst->idx_begin(), Gep_Inst->idx_end())) {
+
+      for (User *U : Index->users()) {
+        
+        if (CmpInst *i_cmp = dyn_cast<CmpInst>(U)) {
+
+          if (DT.dominates(i_cmp, IndexInst)) {
+            if (Index == i_cmp->getOperand(0) && isa<ConstantData>(i_cmp->getOperand(1))) {
+
+              auto IndexSize = i_cmp->getOperand(1);
+
+              auto ConstantSize = dyn_cast<ConstantInt>(IndexSize);
+
+              int64_t MaxOffset = ConstantSize->getSExtValue();
+
+              auto type = Gep_Inst->getPointerOperandType();
+
+              if (auto pttp = cast<PointerType>(type)) {
+                auto pttpee = pttp->getElementType();
+
+                if (isa<ArrayType>(pttpee)) {
+                  auto ObjSize = pttpee->getArrayNumElements();
+                  
+                  return ObjSize >= MaxOffset;
+                }
+              }
+              if (isa<ArrayType>(type)) {
+                auto ObjSize = type->getArrayNumElements();
+
+                return ObjSize >= MaxOffset;
+              }
+            }
+
+            if (Index == i_cmp->getOperand(1) && isa<ConstantData>(i_cmp->getOperand(0))) {
+
+              auto IndexSize = i_cmp->getOperand(0);
+
+              auto ConstantSize = dyn_cast<ConstantInt>(IndexSize);
+
+              int64_t MaxOffset = ConstantSize->getSExtValue();
+
+              auto type = Gep_Inst->getPointerOperandType();
+
+              if (auto pttp = cast<PointerType>(type)) {
+                auto pttpee = pttp->getElementType();
+
+                if (isa<ArrayType>(pttpee)) {
+                  auto ObjSize = pttpee->getArrayNumElements();
+                  
+                  return ObjSize >= MaxOffset;
+                }
+              }
+              if (isa<ArrayType>(type)) {
+                auto ObjSize = type->getArrayNumElements();
+                return ObjSize >= MaxOffset;
+              }
+            }
+          }
+        }
+      } 
+    }
+  }
+  return false;
+
 }
