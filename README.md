@@ -7,14 +7,11 @@ AddressSanitizer (ASan) is a powerful memory error detector. It can detect vario
 Ubuntu 18.04 LTS 64bit
 
 ## Build Vanilla LLVM
-```
 $ ./vanilla_llvm_autosetup.sh
-```
+
 ## Build ASan--enabled LLVM
-```
 $ git clone https://github.com/junxzm1990/ASAN--.git
 $ mkdir ASan--Build && cd ASan--Build
 $ cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
 $ make -j
-```
 
