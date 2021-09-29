@@ -19,3 +19,15 @@ $ cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
 $ make -j
 ```
 
+## Run ASan-- on SPEC2006
+1. Install [SPEC CPU2006 Benchmark](https://www.spec.org/cpu2006/).
+2. Run the following script to run SPEC CPU2006 Benchmark with original ASan under `/cpu2006`:
+```
+./run_asan.sh original_asan <test|train|ref> int
+```
+3. Run the following script to run SPEC CPU2006 Benchmark with ASan-- under `/cpu2006`:
+```
+./run_asan--.sh asan-- <test|train|ref> int
+```
+
+
