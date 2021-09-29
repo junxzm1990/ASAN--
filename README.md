@@ -71,11 +71,10 @@ gn args out/<ASan|ASan-->
 9. Set build arguments.
 ```
 is_clang = true
-clang_base_path = "/PATH/TO/ASAN--"
+clang_base_path = "/PATH/TO/<ASan|ASAN-->"
 is_asan = true
 is_debug = ture
 symbol_level = 1
-clang_use_chrome_plugins = false
 is_component_build = true
 pdf_use_skia=true
 ```
