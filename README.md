@@ -78,3 +78,7 @@ symbol_level = 1
 is_component_build = true
 pdf_use_skia=true
 ```
+10. Build Chromium (the “chrome” target) with Ninja using the command:
+```
+ninja -C out/<ASan|ASan--> chrome
+```
