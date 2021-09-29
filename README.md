@@ -23,11 +23,11 @@ $ make -j
 1. Install [SPEC CPU2006 Benchmark](https://www.spec.org/cpu2006/).
 2. Run the following script to run SPEC CPU2006 Benchmark with original ASan under `/cpu2006`:
 ```
-./run_asan.sh original_asan <test|train|ref> int
+./run_asan.sh asan <test|train|ref> <int|fp>
 ```
 3. Run the following script to run SPEC CPU2006 Benchmark with ASan-- under `/cpu2006`:
 ```
-./run_asan--.sh asan-- <test|train|ref> int
+./run_asan--.sh asan-- <test|train|ref> <int|fp>
 ```
 
 
