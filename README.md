@@ -47,9 +47,9 @@ $ mkdir ~/chromium && cd ~/chromium
 ```
 $ fetch --nohooks chromium
 ```
-5. Check out version of target chromium.
+5. Check out version 58 of target chromium.
 ```
-$ git checkout -b branch_$BRANCH branch-heads/$BRANCH
+$ git checkout tags/58.0.3003.0 -b 58
 ```
 6. Check out a version of depot_tools from around the same time as the target revision.
 ```
