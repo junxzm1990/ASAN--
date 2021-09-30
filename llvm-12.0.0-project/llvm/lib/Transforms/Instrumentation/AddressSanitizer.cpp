@@ -101,6 +101,12 @@
 #include "llvm/IR/PassManager.h"
 #include "llvm/Analysis/CFG.h"
 
+// ASAN-- Scalable Value
+#define RZ_SIZE 16
+#define CHECK_RANGE 64
+#define CHECK_RANGE_LOOP 32
+#define MAX_STEP_SIZE 8
+
 using namespace llvm;
 
 #define DEBUG_TYPE "asan"
@@ -662,6 +668,10 @@ struct AddressSanitizer {
   void sequentialExecuteOptimizationPostDom(Function &F, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument, AliasAnalysis *AA);
   bool ConservativeCallIntrinsicCheck(Instruction *InstStart, Instruction *InstEnd, std::set<Instruction *> &callIntrinsicSet, llvm::DominatorTree &DT, llvm::PostDominatorTree &PDT);
   void ConservativeCallIntrinsicCollect(Function &F, std::set<Instruction *> &callIntrinsicSet);
+  void sequentialExecuteOptimizationBoost(Function &F, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument);
+  void baseAddrOffsetMapPreprocessing(SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument, std::map<std::pair<Value *, std::string>, std::set<std::pair<int64_t, Instruction *>>> &baseAddrOffsetMap_multi);
+  void optimizeInstrumentation(Function &F, std::list<std::pair<int, std::pair<std::pair<int64_t, llvm::Instruction *>, std::vector<std::pair<int64_t, llvm::Instruction *>>>>> &rankPotentialRemoveInsts, std::set<Instruction *> &deleted, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument);
+  void mrgNeighborChks(Function &F, std::map<std::pair<Value *, std::string>, std::set<std::pair<int64_t, Instruction *>>> &baseAddrOffsetMap_multi, std::set<Instruction *> &deleted, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument);
 
 
   bool suppressInstrumentationSiteForDebug(int &Instrumented);
@@ -2901,12 +2911,231 @@ void AddressSanitizer::sequentialExecuteOptimization(Function &F, SmallVector<In
   }
 }
 
+void preprocessPotentialRemoveInsts(Function &F, std::pair<const std::pair<llvm::Value *, std::__cxx11::string>, std::set<std::pair<int64_t, llvm::Instruction *>>> &baseAddrOffsetSet, std::map<Instruction *, std::set<std::pair<Instruction *, Instruction *>>> &potentialRemoveInsts) {
+  
+  auto DT = DominatorTree(F);
+
+  auto PDT = PostDominatorTree();
+
+  PDT.recalculate(F);
+  
+  // offsetInstA is node A
+  for (auto offsetInstA : baseAddrOffsetSet.second) {
+    // offsetInstB is node B
+    for (auto offsetInstB : baseAddrOffsetSet.second) {
+      if (offsetInstA == offsetInstB)
+        continue;
+      // offsetInstC is node C
+      for (auto offsetInstC : baseAddrOffsetSet.second) {
+        if (offsetInstA == offsetInstC || offsetInstB == offsetInstC)
+          continue;
+
+        // Here we ensure (A dominate B OR A post-dominate B) AND (OFFSET(C) > OFFSET(B) AND OFFSET(B) > OFFSET(A) AND OFFSET(C) - OFFSET(A) < 16)
+        if ( (DT.dominates(offsetInstA.second, offsetInstB.second) || PDT.dominates((offsetInstA.second)->getParent(), (offsetInstB.second)->getParent())) 
+            && (offsetInstC.first > offsetInstB.first && offsetInstB.first > offsetInstA.first && offsetInstC.first - offsetInstA.first < RZ_SIZE) ) {
+          // If above conditions are satisfied, then ASan check on B can be removed.
+          if (potentialRemoveInsts.find(offsetInstB.second) == potentialRemoveInsts.end()) {
+            potentialRemoveInsts.insert(std::pair<Instruction *, std::set<std::pair<Instruction *, Instruction *>>>(offsetInstB.second, std::set<std::pair<Instruction *, Instruction *>>()));
+          }
+          // Store the ASan check removable instruction B, and the pair of instructions A and C that ensure the ASan Check to map
+          std::pair<Instruction *, Instruction *> InstsPair;
+          InstsPair.first = offsetInstA.second;
+          InstsPair.second = offsetInstC.second;
+          potentialRemoveInsts[offsetInstB.second].insert(InstsPair);
+        } 
+      }
+    }
+  }
+}
+
+void rankRemovableInsts(std::map<Instruction *, std::set<std::pair<Instruction *, Instruction *>>> &potentialRemoveInsts, std::list<std::pair<int, Instruction *>> &rankPotentialRemoveInsts) {
+  for(auto instVectorMap = potentialRemoveInsts.begin(); instVectorMap != potentialRemoveInsts.end(); ++instVectorMap) {
+    int countInst = 0;
+    for(auto instVector = potentialRemoveInsts.begin(); instVector != potentialRemoveInsts.end(); ++instVector) {
+      if (instVector == instVectorMap)
+        continue;
+      for (auto instPair = (*instVector).second.begin(); instPair != (*instVector).second.end(); ++instPair) {
+        if ((*instVector).first == instPair->first || (*instVector).first == instPair->second) {
+          countInst++;
+        }
+      } 
+    }
+    rankPotentialRemoveInsts.push_back(std::pair<int, Instruction *>(countInst, (*instVectorMap).first));
+  }
+}
+
+void removeInstructionFunc(std::map<Instruction *, std::set<std::pair<Instruction *, Instruction *>>> &potentialRemoveInsts, std::set<Instruction *> &deleted) {
+  
+  std::list<std::pair<int, Instruction *>> rankPotentialRemoveInsts;
+
+  rankRemovableInsts(potentialRemoveInsts, rankPotentialRemoveInsts);
+
+  rankPotentialRemoveInsts.sort();
+
+  for(auto countInst : rankPotentialRemoveInsts) {
+    bool removeInst = true;
+    for (auto elem : deleted) {
+      removeInst = false;
+      for (auto instPair : potentialRemoveInsts[countInst.second]) {
+        if (instPair.first != elem && instPair.second != elem) {
+          removeInst = true;
+          break;
+        }
+      }
+      if (!removeInst)
+        break;
+    }
+    if (!removeInst)
+      continue;
+    deleted.insert(countInst.second);
+    // remove all pairs that contain current key instruction and update the map
+    for(auto instVectorMap = potentialRemoveInsts.begin(); instVectorMap != potentialRemoveInsts.end(); ++instVectorMap) {
+      for (auto instPair = (*instVectorMap).second.begin(); instPair != (*instVectorMap).second.end();) {
+        if (countInst.second == instPair->first || countInst.second == instPair->second) {
+          instPair = (*instVectorMap).second.erase(instPair);
+        }
+        else {
+          ++instPair;
+        }
+      } 
+    }
+  }
+}
+
+void rmNeighborChks(Function &F,std::map<std::pair<Value *, std::string>, std::set<std::pair<int64_t, Instruction *>>> &baseAddrOffsetMap_multi, std::set<Instruction *> &deleted) {
+
+  for (auto baseAddrOffsetSet : baseAddrOffsetMap_multi) {
+    // Create a map to store the ASan check removable instruction, and the pair of instruction to ensure the ASan check
+    std::map<Instruction *, std::set<std::pair<Instruction *, Instruction *>>> potentialRemoveInsts;
+    // Cases for size of set >= 3
+    if ((baseAddrOffsetSet.second).size() >=3 ) {
+      preprocessPotentialRemoveInsts(F, baseAddrOffsetSet, potentialRemoveInsts);
+      removeInstructionFunc(potentialRemoveInsts, deleted); 
+    }
+  }
+}
+
+void singleIndexCaseHandler(std::map<std::pair<Value *, std::string>, std::set<std::pair<int64_t, Instruction *>>> &baseAddrOffsetMap_multi, GetElementPtrInst *Gep_Inst, Instruction *Inst) {
+  
+  Value *baseAddr = Gep_Inst->getPointerOperand();
+  // In order to make form unified, we create a string place holder
+  std::string offsets_single;
+  std::pair<Value *, std::string> key;
+  std::pair<int64_t, Instruction *> value;
+
+  if (auto *offsetAddr = dyn_cast<ConstantInt>(Gep_Inst->idx_begin())) {
+    key.first = baseAddr;
+    key.second = offsets_single;
+    if (baseAddrOffsetMap_multi.find(key) == baseAddrOffsetMap_multi.end()) {
+      //never appeared in the map, so add a slot
+      baseAddrOffsetMap_multi.insert(std::pair<std::pair<Value *, std::string>, std::set<std::pair<int64_t, Instruction *> >>(key, std::set<std::pair<int64_t, Instruction *>>()));
+    }
+    // Convert last offset into int
+    int64_t intLastOffset = offsetAddr->getSExtValue();
+    value.first = intLastOffset;
+    value.second = Inst;
+    baseAddrOffsetMap_multi[key].insert(value);
+  }
+  return;
+}
+
+void multiIndexCaseHandler(std::map<std::pair<Value *, std::string>, std::set<std::pair<int64_t, Instruction *>>> &baseAddrOffsetMap_multi, GetElementPtrInst *Gep_Inst, Instruction *Inst) {
+      
+  Value *baseAddr = Gep_Inst->getPointerOperand();
+  std::pair<Value *, std::string> key;
+  std::pair<int64_t, Instruction *> value;
+  
+  // String to collect offsets from beg to end - 1
+  std::string offsets;
+  bool offsetConstantInt = true;
+  for (auto& index : make_range(Gep_Inst->idx_begin(), Gep_Inst->idx_end() - 1)) {
+    if (auto *offsetAddr_multi = dyn_cast<ConstantInt>(index)) {
+      int64_t intOffset = offsetAddr_multi->getSExtValue();
+      offsets.push_back(intOffset);
+    } else {
+      offsetConstantInt = false;
+      break;
+    }
+  }
+
+  if (!offsetConstantInt) {
+    return;
+  }
+  
+  // Here we check the value of last offset
+  if (auto *offsetAddr_last = dyn_cast<ConstantInt>(Gep_Inst->idx_end() - 1)) {
+    key.first = baseAddr;
+    key.second = offsets;
+    if (baseAddrOffsetMap_multi.find(key) == baseAddrOffsetMap_multi.end()) {
+      //never appeared in the map, so add a slot
+        baseAddrOffsetMap_multi.insert(std::pair<std::pair<Value *, std::string>, std::set<std::pair<int64_t, Instruction *>>>(key, std::set<std::pair<int64_t, Instruction *>>()));
+    }
+    // Convert last offset into int
+    int64_t intLastOffset = offsetAddr_last->getSExtValue();
+    value.first = intLastOffset;
+    value.second = Inst;
+    baseAddrOffsetMap_multi[key].insert(value);
+  }
+  return;
+}
+
+void AddressSanitizer::baseAddrOffsetMapPreprocessing(SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument, std::map<std::pair<Value *, std::string>, std::set<std::pair<int64_t, Instruction *>>> &baseAddrOffsetMap_multi) {
+
+  for (auto oper : OperandsToInstrument) {
+
+    Value *addr = oper.getPtr();
+    if (!addr)
+      continue;
+
+    while (CastInst *Cast_Inst = dyn_cast<CastInst>(addr))
+      addr = Cast_Inst->getOperand(0);
+    
+    // Check if current address is from a gep instruction
+    if (GetElementPtrInst *Gep_Inst = dyn_cast<GetElementPtrInst>(addr)) {
+
+      if (Gep_Inst->getNumIndices() == 1) {
+        singleIndexCaseHandler(baseAddrOffsetMap_multi, Gep_Inst, oper.getInsn());
+        continue;
+      }
+      multiIndexCaseHandler(baseAddrOffsetMap_multi, Gep_Inst, oper.getInsn());
+      continue;
+    }
+  }
+}
+
+void AddressSanitizer::sequentialExecuteOptimizationBoost(Function &F, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument) {
+
+  std::map<std::pair<Value *, std::string>, std::set<std::pair<int64_t, Instruction *>>> baseAddrOffsetMap_multi;
+
+  baseAddrOffsetMapPreprocessing(OperandsToInstrument, baseAddrOffsetMap_multi);
+
+  std::set<Instruction *> deleted;
+
+  // ASAN--: Removing Neighbor Checks
+  rmNeighborChks(F, baseAddrOffsetMap_multi, deleted);
+
+  // updateBaseAddrOffsetMap(baseAddrOffsetMap_multi, deleted);
+
+  // // ASAN--: Merging Neighbor Checks
+  // mrgNeighborChks(F, baseAddrOffsetMap_multi, deleted);
+
+  SmallVector<InterestingMemoryOperand, 16> SEOTempToInstrument(OperandsToInstrument);
+  OperandsToInstrument.clear();
+
+  for (auto item: SEOTempToInstrument) {
+    if (deleted.find(item.getInsn()) == deleted.end())
+      OperandsToInstrument.push_back(item);
+  }
+}
+
 void AddressSanitizer::slimAsanOptimization(Function &F, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument, AliasAnalysis *AA, LoopInfo *LI, ScalarEvolution *SE, ObjectSizeOffsetVisitor &ObjSizeVis, bool UseCalls) {
 
   // ASAN--: Removing Recurring Checks
   sequentialExecuteOptimizationPostDom(F, OperandsToInstrument, AA);
 
   sequentialExecuteOptimization(F, OperandsToInstrument, AA);
+
+  sequentialExecuteOptimizationBoost(F, OperandsToInstrument);
 
 }
 
