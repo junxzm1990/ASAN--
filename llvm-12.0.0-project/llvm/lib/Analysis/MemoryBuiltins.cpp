@@ -615,8 +615,10 @@ SizeOffsetType ObjectSizeOffsetVisitor::compute(Value *V) {
   if (Instruction *I = dyn_cast<Instruction>(V)) {
     // If we have already seen this instruction, bail out. Cycles can happen in
     // unreachable code after constant propagation.
-    if (!SeenInsts.insert(I).second)
-      return unknown();
+
+    //ASAN--: Removing Unsatisfiable Checks
+    // if (!SeenInsts.insert(I).second)
+    //   return unknown();
 
     if (GEPOperator *GEP = dyn_cast<GEPOperator>(V))
       return visitGEPOperator(*GEP);
@@ -796,8 +798,9 @@ SizeOffsetType ObjectSizeOffsetVisitor::visitGlobalAlias(GlobalAlias &GA) {
 }
 
 SizeOffsetType ObjectSizeOffsetVisitor::visitGlobalVariable(GlobalVariable &GV){
-  if (!GV.hasDefinitiveInitializer())
-    return unknown();
+  //ASAN--: Removing Unsatisfiable Checks
+  // if (!GV.hasDefinitiveInitializer())
+  //   return unknown();
 
   APInt Size(IntTyBits, DL.getTypeAllocSize(GV.getValueType()));
   return std::make_pair(align(Size, GV.getAlignment()), Zero);
