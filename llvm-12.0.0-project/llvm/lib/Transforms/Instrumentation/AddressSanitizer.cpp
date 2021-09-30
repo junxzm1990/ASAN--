@@ -3103,6 +3103,246 @@ void AddressSanitizer::baseAddrOffsetMapPreprocessing(SmallVector<InterestingMem
   }
 }
 
+void updateBaseAddrOffsetMap(std::map<std::pair<Value *, std::string>, std::set<std::pair<int64_t, Instruction *>>> &baseAddrOffsetMap_multi, std::set<Instruction *> &deleted) {
+  for (auto baseAddrOffsetSet = baseAddrOffsetMap_multi.begin(); baseAddrOffsetSet != baseAddrOffsetMap_multi.end(); ++baseAddrOffsetSet) {
+    for (auto offsetInst = (*baseAddrOffsetSet).second.begin(); offsetInst != (*baseAddrOffsetSet).second.end();) {
+      if (deleted.find((*offsetInst).second) != deleted.end()) {
+        offsetInst = (*baseAddrOffsetSet).second.erase(offsetInst);
+      }
+      else {
+        ++offsetInst;
+      }
+    }
+  }
+}
+
+// Fucntion to handle DT and PDT for pairwised nodes
+static bool checkConditionPairwisedNodes(llvm::DominatorTree &DT, llvm::PostDominatorTree &PDT, Instruction *A, Instruction *B) {
+  return DT.dominates(A, B) && (A->getParent() == B->getParent() || PDT.dominates(B->getParent(), A->getParent()));
+}
+
+void preprocessInstructionsMap(Function &F, std::pair<const std::pair<llvm::Value *, std::__cxx11::string>, std::set<std::pair<int64_t, llvm::Instruction *>>> &baseAddrOffsetSet, std::map<std::pair<int64_t, llvm::Instruction *>, std::vector<std::pair<int64_t, llvm::Instruction *>>> &instructionsMap) {
+  
+  llvm::DominatorTree DT = DominatorTree(F);
+
+  llvm::PostDominatorTree PDT = PostDominatorTree();
+
+  PDT.recalculate(F);
+  // offsetInstA is node A
+  for (auto offsetInstA : baseAddrOffsetSet.second) {
+    // offsetInstB is node B
+    for (auto offsetInstB : baseAddrOffsetSet.second) {
+      if (offsetInstA == offsetInstB)
+        continue;
+
+      // Here we ensure (A dominate B OR B post-dominte A) AND distance between A and B is less than 64
+      if ( offsetInstA.first - offsetInstB.first < CHECK_RANGE && offsetInstB.first - offsetInstA.first < CHECK_RANGE 
+          && (checkConditionPairwisedNodes(DT, PDT, offsetInstA.second, offsetInstB.second) || (checkConditionPairwisedNodes(DT, PDT, offsetInstB.second, offsetInstA.second)))) {
+        // If all above conditions are satisfied, then we can remove the ASan check on B
+        if (instructionsMap.find(offsetInstA) == instructionsMap.end()) {
+          instructionsMap.insert(std::pair<std::pair<int64_t, llvm::Instruction *>, std::vector<std::pair<int64_t, llvm::Instruction *>>>(offsetInstA, std::vector<std::pair<int64_t, llvm::Instruction *>>()));
+        }
+        // Store the ASan check removable instruction B to map
+        instructionsMap[offsetInstA].push_back(offsetInstB);
+      }
+      else {
+        break;
+      } 
+    }
+  }
+}
+
+void prioritiseRemovableInst(std::map<std::pair<int64_t, llvm::Instruction *>, std::vector<std::pair<int64_t, llvm::Instruction *>>> &instructionsMap, std::list<std::pair<int, std::pair<std::pair<int64_t, llvm::Instruction *>, std::vector<std::pair<int64_t, llvm::Instruction *>>>>> &rankPotentialRemoveInsts) {
+
+  for (auto instVector : instructionsMap) {
+    rankPotentialRemoveInsts.push_back(std::pair<int, std::pair<std::pair<int64_t, llvm::Instruction *>, std::vector<std::pair<int64_t, llvm::Instruction *>>>>(instVector.second.size(), instVector));
+  }
+
+  rankPotentialRemoveInsts.sort();
+
+  rankPotentialRemoveInsts.reverse();
+
+}
+
+std::pair<int64_t, llvm::Instruction *> getLastInst(Function &F, std::pair<int, std::pair<std::pair<int64_t, llvm::Instruction *>, std::vector<std::pair<int64_t, llvm::Instruction *>>>> optInst) {
+
+  llvm::DominatorTree DT = DominatorTree(F);
+
+  std::pair<int64_t, llvm::Instruction *> lastInst = optInst.second.first;
+
+  for (auto eachInst : optInst.second.second) {
+    if (DT.dominates(eachInst.second, lastInst.second)) {
+      continue;
+    }
+    else {
+      lastInst = eachInst;
+    }
+  }
+
+  return lastInst;
+}
+
+std::pair<int64_t, llvm::Instruction *> getMinDistance(std::pair<int, std::pair<std::pair<int64_t, llvm::Instruction *>, std::vector<std::pair<int64_t, llvm::Instruction *>>>> optInst) {
+
+  std::pair<int64_t, llvm::Instruction *> minOffset = optInst.second.second.front();
+
+  for (auto eachInst : optInst.second.second) {
+    if (eachInst.first < minOffset.first) {
+      minOffset = eachInst;
+    }
+    else {
+      continue;
+    }
+  }
+
+  return minOffset;
+}
+
+int getMaxDistance(std::pair<int, std::pair<std::pair<int64_t, llvm::Instruction *>, std::vector<std::pair<int64_t, llvm::Instruction *>>>> optInst) {
+
+  int maxOffset = 0;
+
+  for (auto eachInst : optInst.second.second) {
+    if (eachInst.first > maxOffset) {
+      maxOffset = eachInst.first;
+    }
+    else {
+      continue;
+    }
+  }
+
+  return maxOffset;
+}
+
+void AddressSanitizer::optimizeInstrumentation(Function &F, std::list<std::pair<int, std::pair<std::pair<int64_t, llvm::Instruction *>, std::vector<std::pair<int64_t, llvm::Instruction *>>>>> &rankPotentialRemoveInsts, std::set<Instruction *> &deleted, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument) {
+  
+  bool IsWrite;
+  MaybeAlign Alignment;
+  uint64_t TypeSize;
+  Value *addr;
+  Instruction *cur_Inst;
+  
+  for (auto optInst = rankPotentialRemoveInsts.begin(); optInst != rankPotentialRemoveInsts.end(); ++optInst) {
+
+    std::pair<int64_t, llvm::Instruction *> lastInst = getLastInst(F, (*optInst));
+
+    std::pair<int64_t, llvm::Instruction *> minInst = getMinDistance(*optInst);
+
+    int maxDistance = getMaxDistance(*optInst) - minInst.first;
+
+    for (auto item: OperandsToInstrument) {
+      if (item.getInsn() == minInst.second) {
+        addr = item.getPtr();
+        IsWrite = item.IsWrite;
+        Alignment = item.Alignment;
+        TypeSize = item.TypeSize;
+        cur_Inst = item.getInsn();
+      }
+    }
+
+    if (!addr) {
+      deleted.insert(cur_Inst);
+      continue;
+    }
+
+    // Map current address to shadow memory, and check 64 bits range
+    IRBuilder<> IRB(lastInst.second);
+    Value *AddrLong = IRB.CreatePointerCast(addr, IntptrTy);
+    Type *ShadowTy = IntegerType::get(*C, 8U);
+    if (8 <= maxDistance && maxDistance < 16) {
+      ShadowTy = IntegerType::get(*C, 16U);
+    }
+    else if (16 <= maxDistance && maxDistance < 32) {
+      ShadowTy = IntegerType::get(*C, 32U);
+    }
+    else if (32 <= maxDistance && maxDistance < 64) {
+      ShadowTy = IntegerType::get(*C, 64U);
+    }
+    Type *ShadowPtrTy = PointerType::get(ShadowTy, 0);
+    Value *ShadowPtr = memToShadow(AddrLong, IRB);
+    Value *CmpVal = Constant::getNullValue(ShadowTy);
+    Value *ShadowValue = IRB.CreateLoad(IRB.CreateIntToPtr(ShadowPtr, ShadowPtrTy));
+    Value *Cmp = IRB.CreateICmpNE(ShadowValue, CmpVal);
+
+    Instruction *CheckTerm = SplitBlockAndInsertIfThen(Cmp, lastInst.second, false);
+
+    IRBuilder<> IRBasanCheck(CheckTerm);
+    // If shadow memory check != 0, then we do regular ASan check
+    unsigned Granularity = 1 << Mapping.Scale;
+    if ((TypeSize == 8 || TypeSize == 16 || TypeSize == 32 || TypeSize == 64 || TypeSize == 128) && (!Alignment || *Alignment >= Granularity || *Alignment >= TypeSize / 8)) {
+      instrumentAddress(CheckTerm, CheckTerm, addr, TypeSize, IsWrite, nullptr, false, 0);
+    } else {
+      instrumentUnusualSizeOrAlignment(CheckTerm, CheckTerm, addr, TypeSize, IsWrite, nullptr, false, 0);
+    }
+    deleted.insert((*optInst).second.first.second);
+
+    for (auto eachInst : (*optInst).second.second) {
+      // For each instruction, we will check the BoostInit value to decide add ASan check or not
+      bool IsWrite;
+      MaybeAlign Alignment;
+      uint64_t TypeSize;
+      Value *eachAddr;
+
+      for (auto item: OperandsToInstrument) {
+        if (item.getInsn() == minInst.second) {
+          eachAddr = item.getPtr();
+          IsWrite = item.IsWrite;
+          Alignment = item.Alignment;
+          TypeSize = item.TypeSize;
+        }
+      }
+
+      if (!eachAddr) {
+        deleted.insert(eachInst.second);
+        continue;
+      }
+
+      unsigned Granularity = 1 << Mapping.Scale;
+      if ((TypeSize == 8 || TypeSize == 16 || TypeSize == 32 || TypeSize == 64 || TypeSize == 128) && (!Alignment || *Alignment >= Granularity || *Alignment >= TypeSize / 8)) {
+        instrumentAddress(CheckTerm, CheckTerm, eachAddr, TypeSize, IsWrite, nullptr, false, 0);
+      } else {
+        instrumentUnusualSizeOrAlignment(CheckTerm, CheckTerm, eachAddr, TypeSize, IsWrite, nullptr, false, 0);
+      }
+      deleted.insert(eachInst.second);
+    }
+
+    // eliminate the removable instructions, and update the list
+    for (auto optInstChild = rankPotentialRemoveInsts.begin(); optInstChild != rankPotentialRemoveInsts.end();) {
+
+      if(std::find((*optInst).second.second.begin(), (*optInst).second.second.end(), (*optInstChild).second.first) != (*optInst).second.second.end()) {
+        optInstChild = rankPotentialRemoveInsts.erase(optInstChild);
+      }
+      else {
+        ++optInstChild;
+      }
+    }
+  }
+}
+
+void AddressSanitizer::mrgNeighborChks(Function &F, std::map<std::pair<Value *, std::string>, std::set<std::pair<int64_t, Instruction *>>> &baseAddrOffsetMap_multi, std::set<Instruction *> &deleted, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument) {
+
+  auto DT = DominatorTree(F);
+
+  auto PDT = PostDominatorTree();
+
+  PDT.recalculate(F);
+
+  for (auto baseAddrOffsetSet : baseAddrOffsetMap_multi) {
+    // Create a map to store the instruction, and a vector of instructions it can remove
+    std::map<std::pair<int64_t, llvm::Instruction *>, std::vector<std::pair<int64_t, llvm::Instruction *>>> instructionsMap;
+    std::list<std::pair<int, std::pair<std::pair<int64_t, llvm::Instruction *>, std::vector<std::pair<int64_t, llvm::Instruction *>>>>> rankPotentialRemoveInsts;
+    // Cases for size of set >= 2
+    if ((baseAddrOffsetSet.second).size() >= 2) {
+
+      preprocessInstructionsMap(F, baseAddrOffsetSet, instructionsMap);
+
+      prioritiseRemovableInst(instructionsMap, rankPotentialRemoveInsts);
+
+      optimizeInstrumentation(F, rankPotentialRemoveInsts, deleted, OperandsToInstrument);
+    } 
+  }
+}
+
 void AddressSanitizer::sequentialExecuteOptimizationBoost(Function &F, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument) {
 
   std::map<std::pair<Value *, std::string>, std::set<std::pair<int64_t, Instruction *>>> baseAddrOffsetMap_multi;
@@ -3114,10 +3354,10 @@ void AddressSanitizer::sequentialExecuteOptimizationBoost(Function &F, SmallVect
   // ASAN--: Removing Neighbor Checks
   rmNeighborChks(F, baseAddrOffsetMap_multi, deleted);
 
-  // updateBaseAddrOffsetMap(baseAddrOffsetMap_multi, deleted);
+  updateBaseAddrOffsetMap(baseAddrOffsetMap_multi, deleted);
 
-  // // ASAN--: Merging Neighbor Checks
-  // mrgNeighborChks(F, baseAddrOffsetMap_multi, deleted);
+  // ASAN--: Merging Neighbor Checks
+  mrgNeighborChks(F, baseAddrOffsetMap_multi, deleted, OperandsToInstrument);
 
   SmallVector<InterestingMemoryOperand, 16> SEOTempToInstrument(OperandsToInstrument);
   OperandsToInstrument.clear();
@@ -3134,7 +3374,7 @@ void AddressSanitizer::slimAsanOptimization(Function &F, SmallVector<Interesting
   sequentialExecuteOptimizationPostDom(F, OperandsToInstrument, AA);
 
   sequentialExecuteOptimization(F, OperandsToInstrument, AA);
-
+  // ASAN--: Optimizing Neighbor Checks
   sequentialExecuteOptimizationBoost(F, OperandsToInstrument);
 
 }
