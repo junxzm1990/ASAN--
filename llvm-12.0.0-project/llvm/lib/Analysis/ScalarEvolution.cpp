@@ -7457,8 +7457,9 @@ ScalarEvolution::computeExitLimit(const Loop *L, BasicBlock *ExitingBlock,
   if (BranchInst *BI = dyn_cast<BranchInst>(Term)) {
     assert(BI->isConditional() && "If unconditional, it can't be in loop!");
     bool ExitIfTrue = !L->contains(BI->getSuccessor(0));
-    assert(ExitIfTrue == L->contains(BI->getSuccessor(1)) &&
-           "It should have one successor in loop and one exit block!");
+    // ASAN-- Enabled
+    // assert(ExitIfTrue == L->contains(BI->getSuccessor(1)) &&
+    //        "It should have one successor in loop and one exit block!");
     // Proceed to the next level to examine the exit condition expression.
     return computeExitLimitFromCond(
         L, BI->getCondition(), ExitIfTrue,
@@ -10085,10 +10086,11 @@ bool ScalarEvolution::isLoopEntryGuardedByCond(const Loop *L,
     return false;
 
   // Both LHS and RHS must be available at loop entry.
-  assert(isAvailableAtLoopEntry(LHS, L) &&
-         "LHS is not available at Loop Entry");
-  assert(isAvailableAtLoopEntry(RHS, L) &&
-         "RHS is not available at Loop Entry");
+  // ASAN-- Enabled
+  // assert(isAvailableAtLoopEntry(LHS, L) &&
+  //        "LHS is not available at Loop Entry");
+  // assert(isAvailableAtLoopEntry(RHS, L) &&
+  //        "RHS is not available at Loop Entry");
   return isBasicBlockEntryGuardedByCond(L->getHeader(), Pred, LHS, RHS);
 }
 
