@@ -1546,6 +1546,7 @@ void AddressSanitizer::instrumentMop(ObjectSizeOffsetVisitor &ObjSizeVis,
                                      InterestingMemoryOperand &O, bool UseCalls,
                                      const DataLayout &DL) {
   Value *Addr = O.getPtr();
+  Instruction *Insn = O.getInsn();
 
   // Optimization experiments.
   // The experiments can be used to evaluate potential optimizations that remove
