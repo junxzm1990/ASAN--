@@ -89,6 +89,7 @@
 #include <tuple>
 
 // ASAN-- Helper Headers
+#include "SlimasanProject.h"
 #include "llvm/Analysis/PostDominators.h"
 #include "llvm/Transforms/Scalar.h"
 #include "llvm/Analysis/AliasAnalysis.h"
@@ -645,6 +646,15 @@ struct AddressSanitizer {
   void instrumentMop(ObjectSizeOffsetVisitor &ObjSizeVis,
                      InterestingMemoryOperand &O, bool UseCalls,
                      const DataLayout &DL);
+  // ASAN-- Helper Functions
+  void instrumentMopLoop(ObjectSizeOffsetVisitor &ObjSizeVis,
+                    InterestingMemoryOperand &O, Instruction *PrevI, bool UseCalls,
+                    const DataLayout &DL);
+  void InvariantOptimizeHandler(Loop *L, std::set<Instruction *> &optimized, 
+                      Function &F, InterestingMemoryOperand &Oper, ObjectSizeOffsetVisitor &ObjSizeVis, bool UseCalls);
+  // void MonotonicOptimizeHandler(Loop *L, std::set<Instruction *> &optimized, 
+  //                     Function &F, InterestingMemoryOperand &Oper, ObjectSizeOffsetVisitor &ObjSizeVis, bool UseCalls, ScalarEvolution *SE);
+
   void instrumentPointerComparisonOrSubtraction(Instruction *I);
   void instrumentAddress(Instruction *OrigIns, Instruction *InsertBefore,
                          Value *Addr, uint32_t TypeSize, bool IsWrite,
@@ -672,7 +682,8 @@ struct AddressSanitizer {
   void baseAddrOffsetMapPreprocessing(SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument, std::map<std::pair<Value *, std::string>, std::set<std::pair<int64_t, Instruction *>>> &baseAddrOffsetMap_multi);
   void optimizeInstrumentation(Function &F, std::list<std::pair<int, std::pair<std::pair<int64_t, llvm::Instruction *>, std::vector<std::pair<int64_t, llvm::Instruction *>>>>> &rankPotentialRemoveInsts, std::set<Instruction *> &deleted, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument);
   void mrgNeighborChks(Function &F, std::map<std::pair<Value *, std::string>, std::set<std::pair<int64_t, Instruction *>>> &baseAddrOffsetMap_multi, std::set<Instruction *> &deleted, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument);
-
+  void loopOptimization(Function &F, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument, LoopInfo *LI, ScalarEvolution *SE, ObjectSizeOffsetVisitor &ObjSizeVis, bool UseCalls);
+  enum addrType loopOptimizationCategorise(Function &F, Loop *L, InterestingMemoryOperand Oper, ScalarEvolution *SE);
 
   bool suppressInstrumentationSiteForDebug(int &Instrumented);
   bool instrumentFunction(Function &F, const TargetLibraryInfo *TLI, AliasAnalysis *AA, LoopInfo *LI, ScalarEvolution *SE);
@@ -1587,6 +1598,46 @@ static void instrumentMaskedLoadOrStore(AddressSanitizer *Pass,
   }
 }
 
+static void instrumentMaskedLoadOrStoreLoop(AddressSanitizer *Pass,
+                                        const DataLayout &DL, Type *IntptrTy,
+                                        Value *Mask, Instruction *I, Instruction *PrevI,
+                                        Value *Addr, MaybeAlign Alignment,
+                                        unsigned Granularity, uint32_t TypeSize,
+                                        bool IsWrite, Value *SizeArgument,
+                                        bool UseCalls, uint32_t Exp) {
+  auto *VTy = cast<FixedVectorType>(
+      cast<PointerType>(Addr->getType())->getElementType());
+  uint64_t ElemTypeSize = DL.getTypeStoreSizeInBits(VTy->getScalarType());
+  unsigned Num = VTy->getNumElements();
+  auto Zero = ConstantInt::get(IntptrTy, 0);
+  for (unsigned Idx = 0; Idx < Num; ++Idx) {
+    Value *InstrumentedAddress = nullptr;
+    Instruction *InsertBefore = PrevI;
+    if (auto *Vector = dyn_cast<ConstantVector>(Mask)) {
+      // dyn_cast as we might get UndefValue
+      if (auto *Masked = dyn_cast<ConstantInt>(Vector->getOperand(Idx))) {
+        if (Masked->isZero())
+          // Mask is constant false, so no instrumentation needed.
+          continue;
+        // If we have a true or undef value, fall through to doInstrumentAddress
+        // with InsertBefore == I
+      }
+    } else {
+      IRBuilder<> IRB(I);
+      Value *MaskElem = IRB.CreateExtractElement(Mask, Idx);
+      Instruction *ThenTerm = SplitBlockAndInsertIfThen(MaskElem, I, false);
+      InsertBefore = ThenTerm;
+    }
+
+    IRBuilder<> IRB(InsertBefore);
+    InstrumentedAddress =
+        IRB.CreateGEP(VTy, Addr, {Zero, ConstantInt::get(IntptrTy, Idx)});
+    doInstrumentAddress(Pass, I, InsertBefore, InstrumentedAddress, Alignment,
+                        Granularity, ElemTypeSize, IsWrite, SizeArgument,
+                        UseCalls, Exp);
+  }
+}
+
 void AddressSanitizer::instrumentMop(ObjectSizeOffsetVisitor &ObjSizeVis,
                                      InterestingMemoryOperand &O, bool UseCalls,
                                      const DataLayout &DL) {
@@ -1655,6 +1706,61 @@ void AddressSanitizer::instrumentMop(ObjectSizeOffsetVisitor &ObjSizeVis,
                                 O.IsWrite, nullptr, UseCalls, Exp);
   } else {
     doInstrumentAddress(this, O.getInsn(), O.getInsn(), Addr, O.Alignment,
+                        Granularity, O.TypeSize, O.IsWrite, nullptr, UseCalls,
+                        Exp);
+  }
+}
+
+void AddressSanitizer::instrumentMopLoop(ObjectSizeOffsetVisitor &ObjSizeVis,
+                                     InterestingMemoryOperand &O, Instruction *PrevI, bool UseCalls,
+                                     const DataLayout &DL) {
+  Value *Addr = O.getPtr();
+
+  // Optimization experiments.
+  // The experiments can be used to evaluate potential optimizations that remove
+  // instrumentation (assess false negatives). Instead of completely removing
+  // some instrumentation, you set Exp to a non-zero value (mask of optimization
+  // experiments that want to remove instrumentation of this instruction).
+  // If Exp is non-zero, this pass will emit special calls into runtime
+  // (e.g. __asan_report_exp_load1 instead of __asan_report_load1). These calls
+  // make runtime terminate the program in a special way (with a different
+  // exit status). Then you run the new compiler on a buggy corpus, collect
+  // the special terminations (ideally, you don't see them at all -- no false
+  // negatives) and make the decision on the optimization.
+  uint32_t Exp = ClForceExperiment;
+
+  if (ClOpt && ClOptGlobals) {
+    // If initialization order checking is disabled, a simple access to a
+    // dynamically initialized global is always valid.
+    GlobalVariable *G = dyn_cast<GlobalVariable>(getUnderlyingObject(Addr));
+    if (G && (!ClInitializers || GlobalIsLinkerInitialized(G)) &&
+        isSafeAccess(ObjSizeVis, Addr, O.TypeSize)) {
+      NumOptimizedAccessesToGlobalVar++;
+      return;
+    }
+  }
+
+  if (ClOpt && ClOptStack) {
+    // A direct inbounds access to a stack variable is always valid.
+    if (isa<AllocaInst>(getUnderlyingObject(Addr)) &&
+        isSafeAccess(ObjSizeVis, Addr, O.TypeSize)) {
+      NumOptimizedAccessesToStackVar++;
+      return;
+    }
+  }
+
+  if (O.IsWrite)
+    NumInstrumentedWrites++;
+  else
+    NumInstrumentedReads++;
+
+  unsigned Granularity = 1 << Mapping.Scale;
+  if (O.MaybeMask) {
+    instrumentMaskedLoadOrStoreLoop(this, DL, IntptrTy, O.MaybeMask, O.getInsn(), PrevI,
+                                Addr, O.Alignment, Granularity, O.TypeSize,
+                                O.IsWrite, nullptr, UseCalls, Exp);
+  } else {
+    doInstrumentAddress(this, O.getInsn(), PrevI, Addr, O.Alignment,
                         Granularity, O.TypeSize, O.IsWrite, nullptr, UseCalls,
                         Exp);
   }
@@ -3368,6 +3474,134 @@ void AddressSanitizer::sequentialExecuteOptimizationBoost(Function &F, SmallVect
   }
 }
 
+void AddressSanitizer::InvariantOptimizeHandler(Loop *L, std::set<Instruction *> &optimized, 
+                        Function &F, InterestingMemoryOperand &Oper, ObjectSizeOffsetVisitor &ObjSizeVis, bool UseCalls) {
+  auto DT = DominatorTree(F);
+  auto ExitBB = L->getExitBlock();
+
+  bool IsWrite = Oper.IsWrite;
+  MaybeAlign Alignment = Oper.Alignment;
+	uint64_t TypeSize = Oper.TypeSize;
+
+  Value *addr = Oper.getPtr();
+  if (!addr) {
+    return;
+  }
+    
+  if (!ExitBB) {
+    return;
+  }
+
+  auto exitInst = (*ExitBB).getFirstNonPHI();
+
+  if (DT.dominates(Oper.getInsn(), ExitBB)) {
+    instrumentMopLoop(ObjSizeVis, Oper, exitInst, UseCalls, F.getParent()->getDataLayout());
+    optimized.insert(Oper.getInsn());
+    return;
+  } 
+  else {    
+    // Create local variable Tracer, and assign 0 as initial value
+    IRBuilder<> IRBinit(F.getEntryBlock().getFirstNonPHI());
+    Value *Tracer = IRBinit.CreateAlloca(IntptrTy, nullptr, "Tracer");
+    IRBinit.CreateStore(ConstantInt::get(IntptrTy, 0), Tracer);
+
+    // Assign memory access address to the Tracer
+    IRBuilder<> IRBassign(Oper.getInsn());
+    Value *AddrCast = IRBassign.CreatePointerCast(addr, IntptrTy);
+    IRBassign.CreateStore(AddrCast, Tracer);
+
+    // Check the Tracer value to decide add ASan check or not.
+    IRBuilder<> IRBcheck(exitInst);
+    Value *LITracer = IRBcheck.CreateLoad(Tracer);
+    Value *Cmp = IRBcheck.CreateICmpNE(LITracer, ConstantInt::get(IntptrTy, 0));
+    Instruction *CheckTerm = SplitBlockAndInsertIfThen(Cmp, exitInst, false);
+
+    IRBuilder<> IRBasanCheck(CheckTerm);
+    if (ClOpt && ClOptGlobals) {
+      GlobalVariable *G = dyn_cast<GlobalVariable>(getUnderlyingObject(LITracer));
+      if (G && (!ClInitializers || GlobalIsLinkerInitialized(G)) &&
+          isSafeAccess(ObjSizeVis, LITracer, TypeSize)) {
+        optimized.insert(Oper.getInsn());
+        return;
+      }
+    }
+
+    if (ClOpt && ClOptStack) {
+      // A direct inbounds access to a stack variable is always valid.
+      if (isa<AllocaInst>(getUnderlyingObject(LITracer)) &&
+          isSafeAccess(ObjSizeVis, LITracer, TypeSize)) {
+        optimized.insert(Oper.getInsn());
+        return;
+      }
+    }
+
+    unsigned Granularity = 1 << Mapping.Scale;
+    if ((TypeSize == 8 || TypeSize == 16 || TypeSize == 32 || TypeSize == 64 || TypeSize == 128) && (!Alignment || *Alignment >= Granularity || *Alignment >= TypeSize / 8)) {
+      instrumentAddress(CheckTerm, CheckTerm, LITracer, TypeSize, IsWrite, nullptr, UseCalls, 0);
+    } else {
+      instrumentUnusualSizeOrAlignment(CheckTerm, CheckTerm, LITracer, TypeSize, IsWrite, nullptr, UseCalls, 0);
+    }
+
+
+    // Condition to handel current loop is outer most loop
+    if (L->getParentLoop() == nullptr) {
+      optimized.insert(Oper.getInsn());
+      return;
+    }
+    
+    // If current loop is inner loop, we will re-init the tracer to 0
+    IRBuilder<> IRBreInit(exitInst);
+    IRBreInit.CreateStore(ConstantInt::get(IntptrTy, 0), Tracer);
+    optimized.insert(Oper.getInsn());
+    return;
+  }
+  return;
+  
+}
+
+enum addrType AddressSanitizer::loopOptimizationCategorise(Function &F, Loop *L, InterestingMemoryOperand Oper, ScalarEvolution *SE) {
+
+  std::vector<Value *> backs;
+  std::vector<Value *> processedAddr;
+
+  if (Value* addr = Oper.getPtr()) {
+	  btraceInLoop(addr, backs, L);
+	  return checkAddrType(addr, backs, processedAddr, SE, L);
+  }
+  return UNKNOWN; 
+}
+
+void AddressSanitizer::loopOptimization(Function &F, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument, LoopInfo *LI, ScalarEvolution *SE, ObjectSizeOffsetVisitor &ObjSizeVis, bool UseCalls) {
+
+  std::set<Instruction *> optimized; 
+  for (auto Oper : OperandsToInstrument) {
+    // Check if current instruction is inside loop
+    if (Loop *L = LI->getLoopFor(Oper.getInsn()->getParent())) {
+      // We will categorise the type of optimization
+      if (loopOptimizationCategorise(F, L, Oper, SE) == IBIO) {
+        // optimized.insert(Oper.getInsn());
+        InvariantOptimizeHandler(L, optimized, F, Oper, ObjSizeVis, UseCalls);
+      } else {
+        // optimized.insert(Oper.getInsn());
+        // MonotonicOptimizeHandler(L, optimized, F, Oper, ObjSizeVis, UseCalls, SE);
+      }
+    } 
+  }
+
+  // errs() << "Original Size: " << OperandsToInstrument.size() << "\n";
+	SmallVector<InterestingMemoryOperand, 16> LOTempToInstrument(OperandsToInstrument);
+	OperandsToInstrument.clear();
+
+  // errs() << "Remove Size: " << optimized.size() << "\n";
+
+	for (auto item: LOTempToInstrument) {
+		if (optimized.find(item.getInsn()) == optimized.end())
+			OperandsToInstrument.push_back(item);
+	}
+  // errs() << "After Size: " << OperandsToInstrument.size() << "\n";
+
+}
+
 void AddressSanitizer::slimAsanOptimization(Function &F, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument, AliasAnalysis *AA, LoopInfo *LI, ScalarEvolution *SE, ObjectSizeOffsetVisitor &ObjSizeVis, bool UseCalls) {
 
   // ASAN--: Removing Recurring Checks
@@ -3376,6 +3610,8 @@ void AddressSanitizer::slimAsanOptimization(Function &F, SmallVector<Interesting
   sequentialExecuteOptimization(F, OperandsToInstrument, AA);
   // ASAN--: Optimizing Neighbor Checks
   sequentialExecuteOptimizationBoost(F, OperandsToInstrument);
+  // ASAN--: Optimizing Checks in Loops
+  loopOptimization(F, OperandsToInstrument, LI, SE, ObjSizeVis, UseCalls);
 
 }
 

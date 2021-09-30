@@ -1,5 +1,8 @@
 add_llvm_component_library(LLVMInstrumentation
   AddressSanitizer.cpp
+  Slice.cpp
+  LoopInstCategory.cpp
+  Util.cpp
   BoundsChecking.cpp
   CGProfile.cpp
   ControlHeightReduction.cpp
