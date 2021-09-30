@@ -88,6 +88,19 @@
 #include <string>
 #include <tuple>
 
+// ASAN-- Helper Headers
+#include "llvm/Analysis/PostDominators.h"
+#include "llvm/Transforms/Scalar.h"
+#include "llvm/Analysis/AliasAnalysis.h"
+#include "llvm/Analysis/Loads.h"
+#include "llvm/Analysis/LoopInfo.h"
+#include "llvm/Analysis/OptimizationRemarkEmitter.h"
+#include "llvm/Analysis/RegionInfo.h"
+#include "llvm/Analysis/ScalarEvolution.h"
+#include "llvm/Analysis/ScalarEvolutionExpressions.h"
+#include "llvm/IR/PassManager.h"
+#include "llvm/Analysis/CFG.h"
+
 using namespace llvm;
 
 #define DEBUG_TYPE "asan"
@@ -642,8 +655,17 @@ struct AddressSanitizer {
                                  Value *SizeArgument, uint32_t Exp);
   void instrumentMemIntrinsic(MemIntrinsic *MI);
   Value *memToShadow(Value *Shadow, IRBuilder<> &IRB);
+
+  // ASAN-- Helper Functions
+  void slimAsanOptimization(Function &F, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument, AliasAnalysis *AA, LoopInfo *LI, ScalarEvolution *SE, ObjectSizeOffsetVisitor &ObjSizeVis, bool UseCalls);
+  void sequentialExecuteOptimization(Function &F, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument, AliasAnalysis *AA);
+  void sequentialExecuteOptimizationPostDom(Function &F, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument, AliasAnalysis *AA);
+  bool ConservativeCallIntrinsicCheck(Instruction *InstStart, Instruction *InstEnd, std::set<Instruction *> &callIntrinsicSet, llvm::DominatorTree &DT, llvm::PostDominatorTree &PDT);
+  void ConservativeCallIntrinsicCollect(Function &F, std::set<Instruction *> &callIntrinsicSet);
+
+
   bool suppressInstrumentationSiteForDebug(int &Instrumented);
-  bool instrumentFunction(Function &F, const TargetLibraryInfo *TLI);
+  bool instrumentFunction(Function &F, const TargetLibraryInfo *TLI, AliasAnalysis *AA, LoopInfo *LI, ScalarEvolution *SE);
   bool maybeInsertAsanInitAtFunctionEntry(Function &F);
   bool maybeInsertDynamicShadowAtFunctionEntry(Function &F);
   void markEscapedLocalAllocas(Function &F);
@@ -721,6 +743,12 @@ public:
   void getAnalysisUsage(AnalysisUsage &AU) const override {
     AU.addRequired<ASanGlobalsMetadataWrapperPass>();
     AU.addRequired<TargetLibraryInfoWrapperPass>();
+    // ASAN-- Helper Wrappers
+    AU.addRequired<DominatorTreeWrapperPass>();
+    AU.addRequired<PostDominatorTreeWrapperPass>();
+    AU.addRequired<AAResultsWrapperPass>();
+    AU.addRequired<LoopInfoWrapperPass>();
+    AU.addRequired<ScalarEvolutionWrapperPass>();
   }
 
   bool runOnFunction(Function &F) override {
@@ -730,7 +758,11 @@ public:
         &getAnalysis<TargetLibraryInfoWrapperPass>().getTLI(F);
     AddressSanitizer ASan(*F.getParent(), &GlobalsMD, CompileKernel, Recover,
                           UseAfterScope);
-    return ASan.instrumentFunction(F, TLI);
+    // ASAN-- Helper Wrappers
+    AliasAnalysis *AA = &getAnalysis<AAResultsWrapperPass>().getAAResults();
+    LoopInfo *LI = &getAnalysis<LoopInfoWrapperPass>().getLoopInfo();
+    ScalarEvolution *SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
+    return ASan.instrumentFunction(F, TLI, AA, LI, SE);
   }
 
 private:
@@ -1177,7 +1209,10 @@ PreservedAnalyses AddressSanitizerPass::run(Function &F,
   if (auto *R = MAMProxy.getCachedResult<ASanGlobalsMetadataAnalysis>(M)) {
     const TargetLibraryInfo *TLI = &AM.getResult<TargetLibraryAnalysis>(F);
     AddressSanitizer Sanitizer(M, R, CompileKernel, Recover, UseAfterScope);
-    if (Sanitizer.instrumentFunction(F, TLI))
+    AliasAnalysis *AA = nullptr;
+    LoopInfo *LI = nullptr;
+    ScalarEvolution *SE = nullptr;
+    if (Sanitizer.instrumentFunction(F, TLI, AA, LI, SE))
       return PreservedAnalyses::none();
     return PreservedAnalyses::all();
   }
@@ -2690,8 +2725,193 @@ bool AddressSanitizer::suppressInstrumentationSiteForDebug(int &Instrumented) {
   return !ShouldInstrument;
 }
 
+void AddressSanitizer::sequentialExecuteOptimizationPostDom(Function &F, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument, AliasAnalysis *AA) {
+
+  auto PDT = PostDominatorTree();
+  PDT.recalculate(F);
+  std::map<Value *, std::set<InterestingMemoryOperand *>> AddrToInstructions;
+
+  // pre-processing
+  // group instructions that access the same address (alias considered)
+  for (InterestingMemoryOperand &Operand : OperandsToInstrument) {
+    if (Value *Addr = Operand.getPtr()) {
+
+      if (AddrToInstructions.find(Addr) == AddrToInstructions.end()) {
+
+        bool aliasFound = false;
+        //handle the possibility of alias
+        for (auto item : AddrToInstructions) {
+          if (AA->isMustAlias(item.first, Addr)) {
+            aliasFound = true;
+            AddrToInstructions[item.first].insert(&Operand);
+            break;
+          }
+        }
+        //found an alias, done
+        if (aliasFound) continue;
+
+        //never appeared in the map, so add a slot
+        AddrToInstructions.insert(std::pair<Value *, std::set<InterestingMemoryOperand *>>(Addr, std::set<InterestingMemoryOperand *>()));
+      }
+      //add the inst to the target slot (either the newly created one or an existing one)
+      AddrToInstructions[Addr].insert(&Operand);
+    }
+  }
+
+  std::set<Instruction *> deleted;
+
+  for (auto item : AddrToInstructions) {
+    for (auto inst1 : item.second) {
+      //well, the instruction has been deleted, so who cares
+      if (deleted.find(inst1->getInsn()) != deleted.end())
+        continue;
+
+      for (auto inst2 : item.second) {
+        //avoid checking itself
+        if (inst1->getInsn() == inst2->getInsn() || deleted.find(inst2->getInsn()) != deleted.end())
+          continue;	
+
+        if (PDT.dominates(inst1->getInsn()->getParent(), inst2->getInsn()->getParent())){
+          deleted.insert(inst2->getInsn());
+        }
+      }
+    }
+  }
+  //Let's only keep the non-deleted ones
+  SmallVector<InterestingMemoryOperand, 16> SEOTempToInstrument(OperandsToInstrument);
+  OperandsToInstrument.clear();
+
+  for (auto item: SEOTempToInstrument) {
+    if (deleted.find(item.getInsn()) == deleted.end())
+      OperandsToInstrument.push_back(item);
+  }
+}
+
+void AddressSanitizer::ConservativeCallIntrinsicCollect(Function &F, std::set<Instruction *> &callIntrinsicSet) {
+
+  for (auto &BB : F) {
+    for (auto &Inst : BB) {
+      // Here we check if current instruction is call instruction
+      if (CallInst *CI = dyn_cast<CallInst>(&Inst)) {
+        callIntrinsicSet.insert(&Inst);
+        continue;
+      }
+      IntrinsicInst *II = dyn_cast<IntrinsicInst>(&Inst);
+      // Here we check if Intrinsic ID is lifetime_end
+      if (II && II->getIntrinsicID() == Intrinsic::lifetime_end) {
+        callIntrinsicSet.insert(&Inst);
+        continue;
+      }
+    }
+  }
+}
+
+bool isPostDominatWrapper(Instruction *InstStart, Instruction *TargetInst, llvm::PostDominatorTree &PDT) {
+  
+  BasicBlock *StartBB = InstStart->getParent();
+  BasicBlock *TargetBB = TargetInst->getParent();
+  if (StartBB == TargetBB) {
+    for (auto &itrInst : *StartBB) {
+      if (&itrInst == InstStart) {
+        return false;
+      }
+      if (&itrInst == TargetInst) {
+        return true;
+      }
+    }
+  }
+  return PDT.dominates(StartBB, TargetBB);
+}
+
+bool AddressSanitizer::ConservativeCallIntrinsicCheck(Instruction *InstStart, Instruction *InstEnd, std::set<Instruction *> &callIntrinsicSet, llvm::DominatorTree &DT, llvm::PostDominatorTree &PDT) {
+
+  for (auto TargetInst : callIntrinsicSet) {
+    // InstStart -> TargetInst -> InstEnd && InstStart !PostDominat TargetInst
+    if (isPotentiallyReachable(InstStart, TargetInst) && isPotentiallyReachable(TargetInst, InstEnd) && !isPostDominatWrapper(InstStart, TargetInst, PDT)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+void AddressSanitizer::sequentialExecuteOptimization(Function &F, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument, AliasAnalysis *AA) {
+
+  auto DT = DominatorTree(F);
+  std::map<Value *, std::set<InterestingMemoryOperand *>> AddrToInstructions;
+  auto PDT = PostDominatorTree();
+  PDT.recalculate(F);
+
+  // pre-processing
+  // group instructions that access the same address (alias considered)
+  for (InterestingMemoryOperand &Operand : OperandsToInstrument) {
+    if (Value *Addr = Operand.getPtr()) {
+
+      if (AddrToInstructions.find(Addr) == AddrToInstructions.end()) {
+
+        bool aliasFound = false;
+        //handle the possibility of alias
+        for (auto item : AddrToInstructions) {
+          if (AA->isMustAlias(item.first, Addr)) {
+            aliasFound = true;
+            AddrToInstructions[item.first].insert(&Operand);
+            break;
+          }
+        }
+        //found an alias, done
+        if (aliasFound) continue;
+
+        //never appeared in the map, so add a slot
+        AddrToInstructions.insert(std::pair<Value *, std::set<InterestingMemoryOperand *>>(Addr, std::set<InterestingMemoryOperand *>()));
+      }
+      //add the inst to the target slot (either the newly created one or an existing one)
+      AddrToInstructions[Addr].insert(&Operand);
+    }
+  }
+
+  std::set<Instruction *> deleted;
+
+  std::set<Instruction *> callIntrinsicSet; 
+
+  ConservativeCallIntrinsicCollect(F, callIntrinsicSet);
+
+  for (auto item : AddrToInstructions) {
+    for (auto inst1 : item.second) {
+      //well, the instruction has been deleted, so who cares
+      if (deleted.find(inst1->getInsn()) != deleted.end())
+        continue;
+
+      for (auto inst2 : item.second) {
+        //avoid checking itself
+        if (inst1->getInsn() == inst2->getInsn() || deleted.find(inst2->getInsn()) != deleted.end())
+          continue;	
+
+        if (DT.dominates(inst1->getInsn(), inst2->getInsn()) && ConservativeCallIntrinsicCheck(inst1->getInsn(), inst2->getInsn(), callIntrinsicSet, DT, PDT)){
+          deleted.insert(inst2->getInsn());
+        }
+      }
+    }
+  }
+  //Let's only keep the non-deleted ones
+  SmallVector<InterestingMemoryOperand, 16> SEOTempToInstrument(OperandsToInstrument);
+  OperandsToInstrument.clear();
+
+  for (auto item: SEOTempToInstrument) {
+    if (deleted.find(item.getInsn()) == deleted.end())
+      OperandsToInstrument.push_back(item);
+  }
+}
+
+void AddressSanitizer::slimAsanOptimization(Function &F, SmallVector<InterestingMemoryOperand, 16> &OperandsToInstrument, AliasAnalysis *AA, LoopInfo *LI, ScalarEvolution *SE, ObjectSizeOffsetVisitor &ObjSizeVis, bool UseCalls) {
+
+  // ASAN--: Removing Recurring Checks
+  sequentialExecuteOptimizationPostDom(F, OperandsToInstrument, AA);
+
+  sequentialExecuteOptimization(F, OperandsToInstrument, AA);
+
+}
+
 bool AddressSanitizer::instrumentFunction(Function &F,
-                                          const TargetLibraryInfo *TLI) {
+                                          const TargetLibraryInfo *TLI, AliasAnalysis *AA, LoopInfo *LI, ScalarEvolution *SE) {
   if (F.getLinkage() == GlobalValue::AvailableExternallyLinkage) return false;
   if (!ClDebugFunc.empty() && ClDebugFunc == F.getName()) return false;
   if (F.getName().startswith("__asan_")) return false;
@@ -2788,6 +3008,9 @@ bool AddressSanitizer::instrumentFunction(Function &F,
   ObjectSizeOpts ObjSizeOpts;
   ObjSizeOpts.RoundToAlign = true;
   ObjectSizeOffsetVisitor ObjSizeVis(DL, TLI, F.getContext(), ObjSizeOpts);
+
+  // ASAN-- Optimizations
+  slimAsanOptimization(F, OperandsToInstrument, AA, LI, SE, ObjSizeVis, UseCalls);
 
   // Instrument.
   int NumInstrumented = 0;
