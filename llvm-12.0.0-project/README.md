@@ -32,7 +32,7 @@ $ mkdir ASan--Build-12.0.0 && cd ASan--Build-12.0.0
 $ cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
 $ make -j
 ```
-Please note current ASan-- on LLVM 12.0.0 is preliminary version.
+- Please note current ASan-- on LLVM 12.0.0 is preliminary version.
 
 ### Getting the Source Code and Building Original LLVM
 
