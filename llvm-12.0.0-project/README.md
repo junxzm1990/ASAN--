@@ -9,15 +9,7 @@ For more information on how to contribute to the LLVM project, please
 take a look at the
 [Contributing to LLVM](https://llvm.org/docs/Contributing.html) guide.
 
-## Getting Started with the ASan--enabled LLVM System
-```
-$ mkdir ASan--Build-12.0.0 && cd ASan--Build-12.0.0
-$ cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
-$ make -j
-```
-
-### Overview
-
+## Overview
 Welcome to the LLVM project!
 
 The LLVM project has multiple components. The core of the project is
@@ -33,6 +25,14 @@ component compiles C, C++, Objective-C, and Objective-C++ code into LLVM bitcode
 Other components include:
 the [libc++ C++ standard library](https://libcxx.llvm.org),
 the [LLD linker](https://lld.llvm.org), and more.
+
+### Getting Started with the ASan--enabled LLVM System
+```
+$ mkdir ASan--Build-12.0.0 && cd ASan--Build-12.0.0
+$ cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
+$ make -j
+```
+Please note current ASan-- on LLVM 12.0.0 is preliminary version.
 
 ### Getting the Source Code and Building Original LLVM
 
