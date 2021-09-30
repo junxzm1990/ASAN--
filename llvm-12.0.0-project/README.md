@@ -9,9 +9,12 @@ For more information on how to contribute to the LLVM project, please
 take a look at the
 [Contributing to LLVM](https://llvm.org/docs/Contributing.html) guide.
 
-## Getting Started with the LLVM System
-
-Taken from https://llvm.org/docs/GettingStarted.html.
+## Getting Started with the ASan--enabled LLVM System
+```
+$ mkdir ASan--Build-12.0.0 && cd ASan--Build-12.0.0
+$ cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
+$ make -j
+```
 
 ### Overview
 
@@ -31,7 +34,7 @@ Other components include:
 the [libc++ C++ standard library](https://libcxx.llvm.org),
 the [LLD linker](https://lld.llvm.org), and more.
 
-### Getting the Source Code and Building LLVM
+### Getting the Source Code and Building Original LLVM
 
 The LLVM Getting Started documentation may be out of date.  The [Clang
 Getting Started](http://clang.llvm.org/get_started.html) page might have more
