@@ -1,7 +1,7 @@
 # ASAN-- TestCases
 
 ## Chromium
-Chromium performance under ASan and ASan--. Six popularweb-browser benchmarks are used, including both Time-based ones (Sunspider, Kraken, Lite Brite) and Score-based ones (Octane, Basemark, WebXPRT).
+Chromium performance under ASan and ASan--. Six popularweb-browser benchmarks are used, including both Time-based ones (Sunspider, Kraken, Lite Brite) and Score-based ones (Octane, Basemark, WebXPRT). And reproduced chromium bugs with PoCs are included. 
 
 Please refer to "chromium" for more details.
 
