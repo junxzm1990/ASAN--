@@ -10,12 +10,6 @@ Dumper DUMP;
 bool btraceInLoop(Value *v, std::vector<Value *> &backs, Loop *L) {
   
   if (auto* inst = dyn_cast<Instruction>(v)) {
-    
-    # ifdef SLICE_DEBUG
-    LLVMContext& C = (*inst).getContext();
-    MDNode* N = MDNode::get(C, MDString::get(C, "Backward Slicing Inst"));
-    (*inst).setMetadata("ASAN.Backward_Slicing_Inst", N);
-    # endif
 
 		//return if going out of loop
 		if (!L->contains(inst->getParent())) {      

@@ -502,6 +502,8 @@ struct AddressSanitizer : public FunctionPass {
     // ASAN-- Helper Wrappers
     AU.addRequired<PostDominatorTreeWrapperPass>();
     AU.addRequired<AAResultsWrapperPass>();
+    AU.addRequired<LoopInfoWrapperPass>();
+    AU.addRequired<ScalarEvolutionWrapperPass>();
   }
   uint64_t getAllocaSizeInBytes(const AllocaInst &AI) const {
     uint64_t ArraySize = 1;
@@ -2876,8 +2878,8 @@ void AddressSanitizer::InvariantOptimizeHandler(Loop *L, std::set<Instruction *>
   auto DT = DominatorTree(F);
   auto ExitBB = L->getExitBlock();
   bool IsWrite;
-	unsigned Alignment;
-	uint64_t TypeSize;
+  unsigned Alignment;
+  uint64_t TypeSize;
 
   Value *addr = isInterestingMemoryAccess(Inst, &IsWrite, &TypeSize, &Alignment);
   if (!addr) {
@@ -3069,7 +3071,14 @@ void AddressSanitizer::MonotonicOptimizeHandler(Loop *L, std::set<Instruction *>
 	unsigned Alignment;
 	uint64_t TypeSize;
   auto DT = DominatorTree(F);
+  auto ExitBB = L->getExitBlock();
   ScalarEvolution *SE = &getAnalysis<ScalarEvolutionWrapperPass>().getSE();
+
+  if (!ExitBB) {
+    return;
+  }
+
+  auto exitInst = (*ExitBB).getFirstNonPHI();
 
   Value *addr = isInterestingMemoryAccess(Inst, &IsWrite, &TypeSize, &Alignment);
   if (!addr) 
@@ -3115,6 +3124,17 @@ void AddressSanitizer::MonotonicOptimizeHandler(Loop *L, std::set<Instruction *>
   } else {
     instrumentUnusualSizeOrAlignment(CheckTerm, CheckTerm, addr, TypeSize, IsWrite, nullptr, UseCalls, 0);
   }
+
+  IRBuilder<> IRBreChk(exitInst);
+  Value *InitValue = IRBreChk.CreatePointerCast(initValue, IntptrTy);
+  Value *ExitCmp = IRBreChk.CreateICmpNE(InitValue, AddrLong);
+  Instruction *ExitCheckTerm = SplitBlockAndInsertIfThen(ExitCmp, exitInst, false);
+  if ((TypeSize == 8 || TypeSize == 16 || TypeSize == 32 || TypeSize == 64 || TypeSize == 128) && (Alignment >= Granularity || Alignment == 0 || Alignment >= TypeSize / 8)) {
+    instrumentAddress(ExitCheckTerm, ExitCheckTerm, addr, TypeSize, IsWrite, nullptr, UseCalls, 0);
+  } else {
+    instrumentUnusualSizeOrAlignment(ExitCheckTerm, ExitCheckTerm, addr, TypeSize, IsWrite, nullptr, UseCalls, 0);
+  }
+
   optimized.insert(Inst);
   return;
 }
