@@ -14,6 +14,7 @@ $ ./vanilla_llvm_autosetup.sh
 ## Build ASan--enabled LLVM
 ```
 $ git clone https://github.com/junxzm1990/ASAN--.git
+$ cd llvm-4.0.0-project
 $ mkdir ASan--Build && cd ASan--Build
 $ cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
 $ make -j
