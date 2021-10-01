@@ -6,6 +6,7 @@ Chromium performance under ASan and ASan--. Six popularweb-browser benchmarks ar
 Please refer to "chromium" for more details.
 
 ## Juliet Test Suite
+Juliet Test Suite is a collection of test cases in the C/C++ language. It contains examples for 118 different CWEs. The official website is https://samate.nist.gov/SRD/testsuite.php
 
 
 ## Linux Flaw Project
