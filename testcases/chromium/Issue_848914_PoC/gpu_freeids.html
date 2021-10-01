@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<body>
+
+<canvas id="canvas1" width="1024" height="1024"></canvas>
+<canvas id="canvas2" width="1024" height="1024"></canvas>
+
+<script id='2d-vertex-shader' type='x-shader/x-vertex'>#version 300 es
+in  vec4 var_0001;
+void main()
+{ 
+	gl_Position = var_0001;
+}
+</script>
+	
+<script id='2d-fragment-shader' type='x-shader/x-fragment'>#version 300 es
+void main() {}
+</script>
+
+<script>
+var canvas = document.getElementById('canvas1');
+var gl2 = canvas.getContext('webgl2');
+var canvas = document.getElementById('canvas2');
+var gl3 = canvas.getContext('webgl2' );
+
+var vShader2 = gl2.createShader(gl2.VERTEX_SHADER);
+var vShaderScript2 = document.getElementById('2d-vertex-shader');
+var vShaderSource2 = vShaderScript2.text;
+gl2.shaderSource(vShader2, vShaderSource2);
+gl2.compileShader(vShader2);
+var vertexShader2 = vShader2;
+
+var vShader3 = gl3.createShader(gl3.VERTEX_SHADER);
+var vShaderScript3 = document.getElementById('2d-vertex-shader');
+var vShaderSource3 = vShaderScript3.text;
+gl3.shaderSource(vShader3, vShaderSource3);
+gl3.compileShader(vShader3);
+var vertexShader3 = vShader3;
+
+var fShader2 = gl2.createShader(gl2.FRAGMENT_SHADER);
+var fShaderScript2 = document.getElementById('2d-fragment-shader');
+var fShaderSource2 = fShaderScript2.text;
+gl2.shaderSource(fShader2, fShaderSource2);
+gl2.compileShader(fShader2);
+var fragmentShader2 = fShader2;
+program2 = gl2.createProgram();
+gl2.attachShader(program2,vShader2);
+gl2.attachShader(program2,fShader2);
+gl2.linkProgram(program2);
+gl2.useProgram(program2);
+
+var fShader3 = gl3.createShader(gl3.FRAGMENT_SHADER);
+var fShaderScript3 = document.getElementById('2d-fragment-shader');
+var fShaderSource3 = fShaderScript3.text;
+gl3.shaderSource(fShader3, fShaderSource3);
+gl3.compileShader(fShader3);
+var fragmentShader3 = fShader3;
+program3 = gl3.createProgram();
+gl3.attachShader(program3,vShader3);
+gl3.attachShader(program3,fShader3);
+gl3.linkProgram(program3);
+gl3.useProgram(program3);
+
+var vao = gl3.createVertexArray();
+gl3.bindVertexArray(vao);
+setTimeout(function(){gl3.deleteVertexArray(vao);}, 100);
+
+var buffer3 = gl3.createBuffer();
+
+var vao = gl2.createVertexArray();
+gl2.bindVertexArray(vao);
+
+var buffer2 = gl2.createBuffer();
+gl2.bindBuffer(gl2.ARRAY_BUFFER, buffer2);
+
+var buffer2 = gl2.createBuffer();
+gl2.bindBuffer(gl2.ARRAY_BUFFER, buffer2);
+
+var positionLocation2 = gl2.getAttribLocation(program2, 'var_0001');
+gl2.vertexAttribPointer(positionLocation2,4, gl2.SHORT, true, 0, 0);
+gl2.enableVertexAttribArray(positionLocation2);
+
+var vao2 = gl2.createVertexArray();
+gl2.bindVertexArray(vao2);
+gl2.deleteBuffer(buffer2);
+</script>
+</body>
+</html>
