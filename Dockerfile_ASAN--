@@ -1,0 +1,9 @@
+FROM ubuntu:18.04
+COPY clang /clang
+COPY compiler-rt /compiler-rt
+COPY llvm /llvm
+RUN mkdir ASan--Build && cd ASan--Build
+RUN cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
+RUN make -j
+COPY vanilla_llvm_autosetup.sh /vanilla_llvm_autosetup.sh
+RUN /vanilla_llvm_autosetup.sh
