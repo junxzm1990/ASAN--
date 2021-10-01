@@ -3697,6 +3697,13 @@ void AddressSanitizer::MonotonicOptimizeHandler(Loop *L, std::set<Instruction *>
   unsigned Granularity = 1 << Mapping.Scale;
   Instruction *Inst = Oper.getInsn();
   auto DT = DominatorTree(F);
+  auto ExitBB = L->getExitBlock();
+
+  if (!ExitBB) {
+    return;
+  }
+
+  auto exitInst = (*ExitBB).getFirstNonPHI();
 
   Value *addr = Oper.getPtr();
   if (!addr) 
@@ -3740,6 +3747,16 @@ void AddressSanitizer::MonotonicOptimizeHandler(Loop *L, std::set<Instruction *>
     instrumentAddress(CheckTerm, CheckTerm, addr, TypeSize, IsWrite, nullptr, UseCalls, 0);
   } else {
     instrumentUnusualSizeOrAlignment(CheckTerm, CheckTerm, addr, TypeSize, IsWrite, nullptr, UseCalls, 0);
+  }
+
+  IRBuilder<> IRBreChk(exitInst);
+  Value *InitValue = IRBreChk.CreatePointerCast(initValue, IntptrTy);
+  Value *ExitCmp = IRBreChk.CreateICmpNE(InitValue, AddrLong);
+  Instruction *ExitCheckTerm = SplitBlockAndInsertIfThen(ExitCmp, exitInst, false);
+  if ((TypeSize == 8 || TypeSize == 16 || TypeSize == 32 || TypeSize == 64 || TypeSize == 128) && (!Alignment || *Alignment >= Granularity || *Alignment >= TypeSize / 8)) {
+    instrumentAddress(ExitCheckTerm, ExitCheckTerm, addr, TypeSize, IsWrite, nullptr, UseCalls, 0);
+  } else {
+    instrumentUnusualSizeOrAlignment(ExitCheckTerm, ExitCheckTerm, addr, TypeSize, IsWrite, nullptr, UseCalls, 0);
   }
 
   optimized.insert(Inst);
