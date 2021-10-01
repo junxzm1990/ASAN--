@@ -37,11 +37,11 @@ $ /<ASan|ASan-->/chrome --disable-gpu /Issue_848914_PoC/gpu_freeids.html
 
 - To reproduce issue 1116869:
 ```
-$ /<ASan|ASan-->/chrome --disable-gpu /Issue_1116869_PoC/poc_heap_buffer_overflow_1116869
+$ /<ASan|ASan-->/chrome /Issue_1116869_PoC/poc_heap_buffer_overflow_1116869
 ```
 
 - To reproduce issue 1099446:
 ```
-$ /<ASan|ASan-->/chrome --disable-gpu /Issue_1099446_PoC/poc_heap_buffer_overflow_1099446
+$ /<ASan|ASan-->/chrome /Issue_1099446_PoC/poc_heap_buffer_overflow_1099446
 ```
 
