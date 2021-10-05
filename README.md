@@ -32,75 +32,8 @@ For evaluation part, we used [SPEC CPU2006 Benchmark](https://www.spec.org/cpu20
 For more details, please refer to Section 5 "Implementation and Evaluation" in our paper. 
 
 ### Reproduce Experiment Instuctions
-- [SPEC CPU2006] 
+- Please see [SPEC CPU2006](https://github.com/junxzm1990/ASAN--/tree/master/testcases/spec)
+- Please see [Chromium Project](https://github.com/junxzm1990/ASAN--/tree/master/testcases/chromium)
+- Please see [Juliet Test Suite](https://github.com/junxzm1990/ASAN--/tree/master/testcases/juliet_test_suite)
+- Please see [Linux Flaw Project](https://github.com/junxzm1990/ASAN--/tree/master/testcases/linux_flaw_project)
 
-## Run ASan-- on SPEC2006
-1. Install [SPEC CPU2006 Benchmark](https://www.spec.org/cpu2006/).
-
-- Please note that we can't share SPEC CPU2006 becuase it is commercial.
-
-2. Run the following script to run SPEC CPU2006 Benchmark with original ASan under `/cpu2006`:
-```
-./run_asan.sh asan <test|train|ref> <int|fp>
-```
-3. Run the following script to run SPEC CPU2006 Benchmark with ASan-- under `/cpu2006`:
-```
-./run_asan--.sh asan-- <test|train|ref> <int|fp>
-```
-
-## Run ASan-- on Chromium
-1. Clone the depot_tools repository:
-```
-$ git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-```
-2. Add depot_tools to the end of your PATH :
-```
-$ export PATH="$PATH:/path/to/depot_tools"
-```
-3. Create a chromium directory for the checkout and change to it
-```
-$ mkdir ~/chromium && cd ~/chromium
-```
-4. Run the fetch tool from depot_tools to check out the code and its dependencies.
-```
-$ fetch --nohooks chromium
-```
-5. Check out version 58 of target chromium.
-```
-$ git checkout tags/58.0.3003.0 -b 58
-```
-6. Check out a version of depot_tools from around the same time as the target revision.
-```
-# Get date of current revision:
-~/chrome/src $ COMMIT_DATE=$(git log -n 1 --pretty=format:%ci)
-
-# Check out depot_tools revision from the same time:
-~/depot_tools $ git checkout $(git rev-list -n 1 --before="$COMMIT_DATE" main)
-~/depot_tools $ export DEPOT_TOOLS_UPDATE=0
-```
-7. Checkout all the submodules at their branch DEPS revisions.
-```
-$ gclient sync -D --force --reset --with_branch_heads
-```
-8. To create a build directory, run:
-```
-gn args out/<ASan|ASan-->
-```
-9. Set build arguments.
-```
-is_clang = true
-clang_base_path = "/ASAN--/llvm-4.0.0-project/ASan--Build"
-is_asan = true
-is_debug = ture
-symbol_level = 1
-is_component_build = true
-pdf_use_skia=true
-```
-10. Build Chromium (the “chrome” target) with Ninja using the command:
-```
-ninja -C out/<ASan|ASan--> chrome
-```
-
-/ASAN--/llvm-4.0.0-project/ASan--Build/bin
-original_llvm ASan_Build
-ASan_Build
