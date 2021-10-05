@@ -12,7 +12,24 @@ The official website is https://samate.nist.gov/SRD/testsuite.php
 
 ## Linux Flaw Project
 
-Linux Flaw Project records all the vulnerabilities of linux software that can be reprodeced in local workspace. 
+Linux Flaw Project records all the vulnerabilities of linux software that can be reprodeced in local workspace.
+
+Details of compiling options are under each CVE folder.
 
 The GitHub repo is https://github.com/mudongliang/LinuxFlaw
+
+## SPEC CPU2006
+1. Install [SPEC CPU2006 Benchmark](https://www.spec.org/cpu2006/).
+
+- Please note that we can't share SPEC CPU2006 here becuase it is commercial.
+
+2. Run the following script to run SPEC CPU2006 Benchmark with original ASan under `/cpu2006`:
+```
+./run_asan.sh asan <test|train|ref> <int|fp>
+```
+3. Run the following script to run SPEC CPU2006 Benchmark with ASan-- under `/cpu2006`:
+```
+./run_asan--.sh asan-- <test|train|ref> <int|fp>
+
+
 
