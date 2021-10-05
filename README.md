@@ -28,11 +28,11 @@ $ ./vanilla_llvm_autosetup.sh
 ```
 
 ## Test Cases
-For evaluation part, we used [SPEC CPU2006 Benchmark](https://www.spec.org/cpu2006/) and [Chromium](https://www.chromium.org/Home) to evaluate the runtime performance, and we also utilized [Juliet Test Suite](https://samate.nist.gov/SRD/testsuite.php) and [Linux Flaw Project](https://github.com/mudongliang/LinuxFlaw) to evaluate the bug detection capability. 
-
+For evaluation part, we used [SPEC CPU2006 Benchmark](https://www.spec.org/cpu2006/) and [Chromium Project](https://www.chromium.org/Home) to evaluate the runtime performance, and we also utilized [Juliet Test Suite](https://samate.nist.gov/SRD/testsuite.php) and [Linux Flaw Project](https://github.com/mudongliang/LinuxFlaw) to evaluate the bug detection capability. 
 For more details, please refer to Section 5 "Implementation and Evaluation" in our paper. 
 
-# Reproduce Experiment Instuctions
+### Reproduce Experiment Instuctions
+- [SPEC CPU2006] 
 
 ## Run ASan-- on SPEC2006
 1. Install [SPEC CPU2006 Benchmark](https://www.spec.org/cpu2006/).
@@ -102,3 +102,5 @@ ninja -C out/<ASan|ASan--> chrome
 ```
 
 /ASAN--/llvm-4.0.0-project/ASan--Build/bin
+original_llvm ASan_Build
+ASan_Build
