@@ -4,7 +4,7 @@
 AddressSanitizer (ASan) is a powerful memory error detector. It can detect various errors ranging from spatial issues like out-of-bound accesses to temporal issues like use-after-free. However, ASan has the major drawback of high runtime overhead. In order to reduce the overhead, we propose ASan--, a tool assembling a group of optimizations to reduce (or “debloat”) sanitizer checks and improve ASan’s efficiency without harming the capability, scalability, or usability.
 
 ## Environment
-ASan-- is supported by different Ubuntu Versions. For reproductive experiments, we recommend Ubuntu 18.04 LTS 64bit.
+ASan-- is supported by different Ubuntu versions. For reproductive experiments, we recommend you to build ASan-- on Ubuntu 18.04 LTS 64bit.
 
 ## ASan-- Debloating Techniques
 - [Removing Unsatisfiable Checks](https://github.com/junxzm1990/ASAN--/blob/e96d4aa82072546e8f2016cf83beba88af4995ea/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L1385)
@@ -22,15 +22,17 @@ $ make -j
 ```
 
 ## Build Vanilla LLVM
-In case you want to use the original LLVM-4.0.0, the auto build script is provided:
+In case you want to use the original LLVM-4.0.0, please run:
 ```
 $ ./vanilla_llvm_autosetup.sh
 ```
 
 ## Test Cases
-For evaluation part, we used [SPEC CPU2006 Benchmark](https://www.spec.org/cpu2006/) and [Chromium](https://www.chromium.org/Home) to evaluate the run-time performance, and we also utilized [Juliet Test Suite](https://samate.nist.gov/SRD/testsuite.php) and [Linux Flaw Project](https://github.com/mudongliang/LinuxFlaw) to evaluate the bug detection capability. For more details, please refer to Section 5 "Implementation and Evaluation" in our paper. 
+For evaluation part, we used [SPEC CPU2006 Benchmark](https://www.spec.org/cpu2006/) and [Chromium](https://www.chromium.org/Home) to evaluate the runtime performance, and we also utilized [Juliet Test Suite](https://samate.nist.gov/SRD/testsuite.php) and [Linux Flaw Project](https://github.com/mudongliang/LinuxFlaw) to evaluate the bug detection capability. 
 
-## Reproduce Experiment Instuctions
+For more details, please refer to Section 5 "Implementation and Evaluation" in our paper. 
+
+# Reproduce Experiment Instuctions
 
 ## Run ASan-- on SPEC2006
 1. Install [SPEC CPU2006 Benchmark](https://www.spec.org/cpu2006/).
