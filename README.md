@@ -27,6 +27,7 @@ $ ./vanilla_llvm_autosetup.sh
 ```
 ## Test Cases
 For evaluation part, we used [SPEC CPU2006 Benchmark](https://www.spec.org/cpu2006/) and [Chromium Project](https://www.chromium.org/Home) to evaluate the runtime performance, then utilized [Juliet Test Suite](https://samate.nist.gov/SRD/testsuite.php) and [Linux Flaw Project](https://github.com/mudongliang/LinuxFlaw) to evaluate the bug detection capability. 
+
 For more details, please refer to Section 5 "Implementation and Evaluation" in our paper. 
 
 ### Reproduce Experiment Instuctions
