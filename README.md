@@ -23,7 +23,8 @@ $ make -j
 ## Run ASan-- on SPEC2006
 1. Install [SPEC CPU2006 Benchmark](https://www.spec.org/cpu2006/).
 
-Please note that we can't share SPEC CPU2006 becuase it is commercial.
+- Please note that we can't share SPEC CPU2006 becuase it is commercial.
+
 2. Run the following script to run SPEC CPU2006 Benchmark with original ASan under `/cpu2006`:
 ```
 ./run_asan.sh asan <test|train|ref> <int|fp>
