@@ -14,7 +14,7 @@ The official website is https://samate.nist.gov/SRD/testsuite.php
 
 Linux Flaw Project records all the vulnerabilities of linux software that can be reprodeced in local workspace.
 
-Details of compiling options are under each CVE folder.
+Details of compiling instructions are under each CVE folder.
 
 The GitHub repo is https://github.com/mudongliang/LinuxFlaw
 
