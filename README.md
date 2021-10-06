@@ -7,10 +7,10 @@ AddressSanitizer (ASan) is a powerful memory error detector. It can detect vario
 ASan-- is supported by different Ubuntu versions. For reproductive experiments, we recommend you to build ASan-- on Ubuntu 18.04 LTS 64bit.
 
 ## ASan-- Debloating Techniques
-- [Removing Unsatisfiable Checks](https://github.com/junxzm1990/ASAN--/blob/e96d4aa82072546e8f2016cf83beba88af4995ea/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L1385)
-- [Removing Recurring Checks](https://github.com/junxzm1990/ASAN--/blob/e96d4aa82072546e8f2016cf83beba88af4995ea/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L3212)
-- [Optimizing Neighbor Checks](https://github.com/junxzm1990/ASAN--/blob/e96d4aa82072546e8f2016cf83beba88af4995ea/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L3217)
-- [Optimizing Checks in Loops](https://github.com/junxzm1990/ASAN--/blob/e96d4aa82072546e8f2016cf83beba88af4995ea/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L3219)
+- [Removing Unsatisfiable Checks](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L1385)
+- [Removing Recurring Checks](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L3212)
+- [Optimizing Neighbor Checks](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L3217)
+- [Optimizing Checks in Loops](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L3220)
 
 ## Build ASan-- LLVM
 ```
