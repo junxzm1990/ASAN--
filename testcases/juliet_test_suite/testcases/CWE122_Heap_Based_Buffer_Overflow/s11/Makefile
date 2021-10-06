@@ -1,8 +1,8 @@
-CC=gcc
-CPP=g++
+CC=/ASAN--/llvm-4.0.0-project/ASan--Build/bin/clang
+CPP=/ASAN--/llvm-4.0.0-project/ASan--Build/bin/clang++
 DEBUG=-g
-CFLAGS=-c
-LFLAGS=-lpthread
+CFLAGS=-c -fsanitize=address -fsanitize-recover=address
+LFLAGS=-lpthread -fsanitize=address
 
 INCLUDES=-I ../../../testcasesupport
 
