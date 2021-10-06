@@ -3216,6 +3216,7 @@ void AddressSanitizer::ASAN_Optimizations(Function &F, SmallVector<Instruction *
   // ASAN-- "Optimizing Neighbor Checks" Optimization Enabled
   sequentialExecuteOptimizationBoost(F, ToInstrument);
 
+  // ASAN-- "Optimizing Neighbor Checks" Optimization Enabled
   loopOptimization(F, ToInstrument);
 
 }
