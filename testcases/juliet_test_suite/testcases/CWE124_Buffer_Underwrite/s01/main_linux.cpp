@@ -16,7 +16,7 @@ int main(int argc, char * argv[]) {
 
 	globalArgc = argc;
 	globalArgv = argv;
-
+#define OMITGOODF
 #ifndef OMITGOOD
 
 	/* Calling C good functions */
