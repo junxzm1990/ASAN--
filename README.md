@@ -23,6 +23,15 @@ $ mkdir ASan--Build && cd ASan--Build
 $ cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
 $ make -j
 ```
+## Build ASan-- LLVM via Docker
+If you prefer to use Docker, we also provides script to build docker image.
+```
+$ docker build -f Dockerfile_ASAN-- -t asan:latest --shm-size=100g .
+$ docker run -it asan:latest
+$ cd home/llvm-4.0.0-project && mkdir ASan--Build && cd ASan--Build
+$ CC=/usr/bin/clang-6.0 CXX=/usr/bin/clang++-6.0 cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
+$ make -j
+```
 ## Build Vanilla LLVM
 In case you want to use the original LLVM-4.0.0, please run:
 ```
