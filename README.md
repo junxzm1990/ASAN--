@@ -24,6 +24,7 @@ Before you can compile ASAN--, you will need to install the following dependenci
 $ sudo apt-get install cmake
 $ sudo apt-get install git
 $ sudo apt-get install wget
+$ sudo apt-get install tar
 ```
 
 ## Build ASan-- from source code
@@ -38,7 +39,6 @@ $ make -j
 ## Build Vanilla LLVM
 In case you want to run the original LLVM-4.0.0 for comparison, please run:
 ```
-$ sudo apt-get install tar
 $ ./vanilla_llvm_autosetup.sh
 ```
 ## Test Cases
