@@ -3,10 +3,8 @@
 ## Overview
 AddressSanitizer (ASan) is a powerful memory error detector. It can detect various errors ranging from spatial issues like out-of-bound accesses to temporal issues like use-after-free. However, ASan has the major drawback of high runtime overhead. In order to reduce the overhead, we propose ASan--, a tool assembling a group of optimizations to reduce (or “debloat”) sanitizer checks and improve ASan’s efficiency without harming the capability, scalability, or usability.
 
-## Environment
-ASan-- is supported by different Ubuntu versions. For reproductive experiments, we recommend you to build ASan-- on Ubuntu 18.04 LTS 64bit.
+You can find the source code to implement each of our optimizations below:
 
-## ASan-- Debloating Techniques
 - [Removing Unsatisfiable Checks](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L1385) Source code of optimization can be found here.
 
 - [Removing Recurring Checks](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L3212) Source code of optimization can be found here.
@@ -15,23 +13,27 @@ ASan-- is supported by different Ubuntu versions. For reproductive experiments, 
 
 - [Optimizing Checks in Loops](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L3220) Source code of optimization can be found here.
 
-## Build ASan-- LLVM
+## Building Environment
+ASan-- is supported by different Ubuntu versions. For reproductive experiments, we recommend you to build ASan-- on Ubuntu 18.04 LTS 64bit (a virtual machine is fine)
+
+Before you can compile ASAN--, you will need to install the following dependencies:
+XX
+XX
+XX
+
+
+
+
+## Build ASan-- from source code
 ```
 $ git clone https://github.com/junxzm1990/ASAN--.git
+$ cd ASAN--/
 $ cd llvm-4.0.0-project
 $ mkdir ASan--Build && cd ASan--Build
 $ cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
 $ make -j
 ```
-## Build ASan-- LLVM via Docker
-If you prefer to use Docker, we also provides script to build docker image.
-```
-$ docker build -f Dockerfile_ASAN-- -t asan:latest --shm-size=100g .
-$ docker run -it asan:latest
-$ cd home/llvm-4.0.0-project && mkdir ASan--Build && cd ASan--Build
-$ CC=/usr/bin/clang-6.0 CXX=/usr/bin/clang++-6.0 cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
-$ make -j
-```
+
 ## Build Vanilla LLVM
 In case you want to use the original LLVM-4.0.0, please run:
 ```
@@ -48,3 +50,14 @@ For more details, please refer to Section 5 "Implementation and Evaluation" in o
 - Please see [Juliet Test Suite](https://github.com/junxzm1990/ASAN--/tree/master/testcases/juliet_test_suite)
 - Please see [Linux Flaw Project](https://github.com/junxzm1990/ASAN--/tree/master/testcases/linux_flaw_project)
 
+
+
+## If you do not want to build ASAN-- from scratch, you can use the docker we prepared:
+```
+$ docker build -f Dockerfile_ASAN-- -t asan:latest --shm-size=100g .
+$ docker run -it asan:latest
+
+XXX tell people how to use the docker directly without building a single thing
+
+
+```
