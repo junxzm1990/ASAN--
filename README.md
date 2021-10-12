@@ -7,10 +7,9 @@ You can find the source code to implement each of our optimizations below:
 
 - Removing Unsatisfiable Checks
 
-```
-- [Global Optimization](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L1385) Source code of optimization can be found here.
-- [Stack Optimization](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L1404) Source code of optimization can be found here.
-```
+	- [Global Optimization](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L1385) Source code of optimization can be found here.
+	- [Stack Optimization](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L1404) Source code of optimization can be found here.
+
 
 - [Removing Recurring Checks](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L3212) Source code of optimization can be found here.
 
@@ -58,10 +57,6 @@ For more details, please refer to Section 5 "Implementation and Evaluation" in o
 
 ## If you do not want to build ASAN-- from scratch, you can use the docker we prepared:
 ```
-$ docker build -f Dockerfile_ASAN-- -t asan:latest --shm-size=100g .
-$ docker run -it asan:latest
-
-XXX tell people how to use the docker directly without building a single thing
-
-
+$ docker build -f Dockerfile_ASAN-- -t asanopt:latest --shm-size=100g .
+$ docker run -it asanopt:latest
 ```
