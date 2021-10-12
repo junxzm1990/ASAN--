@@ -26,8 +26,7 @@ XX
 
 ## Build ASan-- from source code
 ```
-$ git clone https://github.com/junxzm1990/ASAN--.git
-$ cd ASAN--/
+$ git clone https://github.com/junxzm1990/ASAN--.git && cd ASAN--/
 $ cd llvm-4.0.0-project
 $ mkdir ASan--Build && cd ASan--Build
 $ cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
