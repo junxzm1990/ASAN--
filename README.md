@@ -37,6 +37,7 @@ $ make -j
 ## Build Vanilla LLVM
 In case you want to use the original LLVM-4.0.0, please run:
 ```
+$ sudo apt-get install tar
 $ ./vanilla_llvm_autosetup.sh
 ```
 ## Test Cases
