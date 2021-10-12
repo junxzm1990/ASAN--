@@ -5,7 +5,12 @@ AddressSanitizer (ASan) is a powerful memory error detector. It can detect vario
 
 You can find the source code to implement each of our optimizations below:
 
-- [Removing Unsatisfiable Checks](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L1385) Source code of optimization can be found here.
+- Removing Unsatisfiable Checks
+
+```
+- [Global Optimization](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L1385) Source code of optimization can be found here.
+- [Stack Optimization](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L1404) Source code of optimization can be found here.
+```
 
 - [Removing Recurring Checks](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L3212) Source code of optimization can be found here.
 
@@ -14,19 +19,18 @@ You can find the source code to implement each of our optimizations below:
 - [Optimizing Checks in Loops](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L3220) Source code of optimization can be found here.
 
 ## Building Environment
-ASan-- is supported by different Ubuntu versions. For reproductive experiments, we recommend you to build ASan-- on Ubuntu 18.04 LTS 64bit (a virtual machine is fine). To support the benchmarks testing Chromium, we suggest you install the desktop version of Ubuntu.
+ASan-- is supported by different Ubuntu versions. For reproductive experiments, we recommend you to build ASan-- on Ubuntu 18.04 LTS 64bit (a virtual machine is fine). To support the benchmarks testing Chromium, we suggest you to install the desktop version of Ubuntu.
 
 Before you can compile ASAN--, you will need to install the following dependencies:
-XX
-XX
-XX
-
-
-
+```
+$ sudo apt-get install cmake
+$ sudo apt-get install git
+$ sudo apt-get install wget
+```
 
 ## Build ASan-- from source code
 ```
-$ git clone https://github.com/junxzm1990/ASAN--.git && cd ASAN--/
+$ git clone https://github.com/junxzm1990/ASAN--.git && cd ASAN--
 $ cd llvm-4.0.0-project
 $ mkdir ASan--Build && cd ASan--Build
 $ cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm

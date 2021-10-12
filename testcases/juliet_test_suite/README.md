@@ -6,5 +6,8 @@ For the Juliet test suite, we select CWEs related to memory corruption bugs, whi
 - [CWE126_Buffer_Overread](https://github.com/junxzm1990/ASAN--/tree/master/testcases/juliet_test_suite/testcases/CWE126_Buffer_Overread)
 - [CWE127_Buffer_Underread](https://github.com/junxzm1990/ASAN--/tree/master/testcases/juliet_test_suite/testcases/CWE127_Buffer_Underread)
 
-Please refer to above hyperlinks for detailed instructions to run the tests.
+Please refer to above hyperlinks for detailed instructions to run the tests. For example:
+```
+$ cd testcases && cd CWE121_Stack_Based_Buffer_Overflow
+```
 

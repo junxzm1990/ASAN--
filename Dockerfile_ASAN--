@@ -1,7 +1,13 @@
 FROM ubuntu:18.04
 RUN apt-get update && apt-get -y install cmake \
-	clang-6.0 \
+	clang-4.0 \
 	tar \
 	wget
 COPY llvm-4.0.0-project /home/llvm-4.0.0-project
 COPY testcases /home/testcases
+WORKDIR "/home/llvm-4.0.0-project"
+RUN mkdir ASan--Build
+WORKDIR "/home/llvm-4.0.0-project/ASan--Build"
+RUN CC=/usr/bin/clang-4.0 CXX=/usr/bin/clang++-4.0 cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
+RUN make -j4
+

@@ -8,6 +8,6 @@ $ cd cpu2006
 ```
 3. Run the following script to run SPEC CPU2006 Benchmark with ASan-- under `/cpu2006`:
 ```
-~/cpu2006 $ ./run_asan--.sh asan-- <test|train|ref> <int|fp>
+~/cpu2006 $ CC=../../../llvm-4.0.0-project/ASan--Build/bin/clang CXX=../../../llvm-4.0.0-project/ASan--Build/bin/clang++ ./run_asan--.sh asan-- <test|train|ref> <int|fp>
 ```
 

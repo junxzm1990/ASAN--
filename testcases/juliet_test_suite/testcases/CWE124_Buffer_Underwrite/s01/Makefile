@@ -1,5 +1,5 @@
-CC=~/ASAN--/llvm-4.0.0-project/ASan--Build/bin/clang
-CPP=~/ASAN--/llvm-4.0.0-project/ASan--Build/bin/clang++
+CC=../../../../../llvm-4.0.0-project/ASan--Build/bin/clang
+CPP=../../../../../llvm-4.0.0-project/ASan--Build/bin/clang++
 DEBUG=-g
 CFLAGS=-c -fsanitize=address -fsanitize-recover=address
 LFLAGS=-lpthread -fsanitize=address

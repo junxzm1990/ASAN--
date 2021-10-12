@@ -45,11 +45,11 @@ ulimit -s 8092  # stack
 
 SPEC_J=${SPEC_J:-20}
 NUM_RUNS=${NUM_RUNS:-1}
-CC=${CC:-~/ASAN--/llvm-4.0.0-project/ASan--Build/bin/clang}
+CC=${CC}
 BIT=${BIT:-64}
 OPT_LEVEL=${OPT_LEVEL:-"-O2"}
 F_ASAN=-fsanitize=address
-CXX=${CXX:-~/ASAN--/llvm-4.0.0-project/ASan--Build/bin/clang++}
+CXX=${CXX}
 rm -rf config/$name.*
 
 if test -z "$FC"; then

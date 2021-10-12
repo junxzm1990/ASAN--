@@ -23,7 +23,7 @@ $ git checkout tags/58.0.3003.0 -b 58
 6. Check out a version of depot_tools from around the same time as the target revision.
 ```
 # Get date of current revision:
-~/chrome/src $ COMMIT_DATE=$(git log -n 1 --pretty=format:%ci)
+~/chromium/src $ COMMIT_DATE=$(git log -n 1 --pretty=format:%ci)
 
 # Check out depot_tools revision from the same time:
 ~/depot_tools $ git checkout $(git rev-list -n 1 --before="$COMMIT_DATE" main)
@@ -40,7 +40,7 @@ gn args out/ASan--
 9. Set build arguments.
 ```
 is_clang = true
-clang_base_path = "~/ASAN--/llvm-4.0.0-project/ASan--Build"
+clang_base_path = "../../../../../../llvm-4.0.0-project/ASan--Build"
 is_asan = true
 is_debug = ture
 symbol_level = 1
