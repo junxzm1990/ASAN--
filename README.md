@@ -14,7 +14,7 @@ You can find the source code to implement each of our optimizations below:
 - [Optimizing Checks in Loops](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L3220) Source code of optimization can be found here.
 
 ## Building Environment
-ASan-- is supported by different Ubuntu versions. For reproductive experiments, we recommend you to build ASan-- on Ubuntu 18.04 LTS 64bit (a virtual machine is fine)
+ASan-- is supported by different Ubuntu versions. For reproductive experiments, we recommend you to build ASan-- on Ubuntu 18.04 LTS 64bit (a virtual machine is fine). To support the benchmarks testing Chromium, we suggest you install the desktop version of Ubuntu.
 
 Before you can compile ASAN--, you will need to install the following dependencies:
 XX
