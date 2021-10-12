@@ -6,8 +6,6 @@ wget https://releases.llvm.org/4.0.0/llvm-4.0.0.src.tar.xz
 wget https://releases.llvm.org/4.0.0/cfe-4.0.0.src.tar.xz
 wget https://releases.llvm.org/4.0.0/compiler-rt-4.0.0.src.tar.xz
 
-sudo apt-get install tar
-
 tar -xvf llvm-4.0.0.src.tar.xz
 tar -xvf cfe-4.0.0.src.tar.xz
 tar -xvf compiler-rt-4.0.0.src.tar.xz
