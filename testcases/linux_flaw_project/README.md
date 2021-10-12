@@ -7,6 +7,7 @@ Dependencies needed to support the testcases:
 ```
 sudo apt-get install sendmail
 sudo apt-get install vim
+export CC=$(readlink -f ../../llvm-4.0.0-project/ASan--Build/bin/clang) CXX=$(readlink -f ../../llvm-4.0.0-project/ASan--Build/bin/clang++)
 ```
 
 
