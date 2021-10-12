@@ -56,6 +56,11 @@ For more details, please refer to Section 5 "Implementation and Evaluation" in o
 
 ## If you do not want to build ASAN-- from scratch, you can use the docker we prepared:
 ```
+$ docker build -f Dockerfile -t asanopt:latest --shm-size=100g .
+$ docker run -it asanopt:latest
+```
+Please note the docker image is publicly available [here](https://hub.docker.com/r/yzhang71/asanopt), and it contains prebuilt ASAN-- and testcases. To build it from scratch, you can use Dockerfile_ASAN-- with commands below:
+```
 $ docker build -f Dockerfile_ASAN-- -t asanopt:latest --shm-size=100g .
 $ docker run -it asanopt:latest
 ```
