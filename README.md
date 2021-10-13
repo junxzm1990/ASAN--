@@ -8,7 +8,7 @@ You can find the source code to implement each of our optimizations below:
 - Removing Unsatisfiable Checks
 
 	- Global Optimization [[src]](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L1385)
-	- Stack Optimization [[src]](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L1404)
+	- Stack Optimization  [[src]](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L1404)
 
 - Removing Recurring Checks [[src]](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L3212)
 
