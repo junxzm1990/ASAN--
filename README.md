@@ -8,7 +8,7 @@ You can find the source code to implement each of our optimizations below:
 - Removing Unsatisfiable Checks
 
 	- Global Optimization [[src]](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L1385)
-	- Stack Optimization  [[src]](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L1404)
+	- Stack Optimization [[src]](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L1404)
 
 - Removing Recurring Checks [[src]](https://github.com/junxzm1990/ASAN--/blob/64b72d964a1f1542f7341774980a43ddd6fbf189/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp#L3212)
 
@@ -52,13 +52,32 @@ For more details, please refer to Section 5 "Implementation and Evaluation" in o
 - Please see [Juliet Test Suite](https://github.com/junxzm1990/ASAN--/tree/master/testcases/juliet_test_suite)
 - Please see [Linux Flaw Project](https://github.com/junxzm1990/ASAN--/tree/master/testcases/linux_flaw_project)
 
-
-
 ## If you do not want to build ASAN-- from scratch, you can use the docker we prepared:
 ```
 $ docker build -f Dockerfile -t asanopt:latest --shm-size=100g .
 $ docker run -it asanopt:latest
 ```
+```console
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+asanopt             latest              73092c0fa425        About an hour ago   28GB
+```
+We also provided the testcases inside Docker. 
+
+Juliet Test Suite example:
+```
+$ cd /home/testcases/juliet_test_suite/testcases/CWE121_Stack_Based_Buffer_Overflow/s01
+$ make && ./CWE121_s01
+```
+
+Linux Flaw Project example:
+```
+$ cd /home/testcases/linux_flaw_project
+$ export CC=$(readlink -f ../../llvm-4.0.0-project/ASan--Build/bin/clang) CXX=$(readlink -f ../../llvm-4.0.0-project/ASan--Build/bin/clang++)
+$ cd /CVE-2006-0539
+$ bash autorun.sh
+$ ./convert-fcrontab `perl -e 'print "pi3"x600'`
+```
+
 Please note the docker image is publicly available [here](https://hub.docker.com/r/yzhang71/asanopt), and it contains prebuilt ASAN-- and testcases. To build it from scratch, you can use Dockerfile_ASAN-- with commands below:
 ```
 $ docker build -f Dockerfile_ASAN-- -t asanopt:latest --shm-size=100g .

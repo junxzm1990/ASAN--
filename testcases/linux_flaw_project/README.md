@@ -7,6 +7,9 @@ Dependencies needed to support the testcases:
 ```
 sudo apt-get install sendmail
 sudo apt-get install vim
+sudo apt-get install pkg-config
+sudo apt-get install fontconfig
+sudo apt-get install libfontconfig1-dev
 export CC=$(readlink -f ../../llvm-4.0.0-project/ASan--Build/bin/clang) CXX=$(readlink -f ../../llvm-4.0.0-project/ASan--Build/bin/clang++)
 ```
 

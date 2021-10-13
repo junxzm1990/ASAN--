@@ -2,7 +2,9 @@ FROM ubuntu:18.04
 RUN apt-get update && apt-get -y install cmake \
 	clang-4.0 \
 	tar \
-	wget
+	wget \
+	sendmail \
+	vim
 COPY llvm-4.0.0-project /home/llvm-4.0.0-project
 COPY testcases /home/testcases
 WORKDIR "/home/llvm-4.0.0-project"
