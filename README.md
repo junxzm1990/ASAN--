@@ -59,29 +59,38 @@ $ docker run -it asanopt:latest
 REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
 asanopt             latest              73092c0fa425        About an hour ago   28GB
 ```
+Location of ASan--:
+```
+/home/llvm-4.0.0-project/ASan--Build/bin/<clang|clang++>
+```
+Location of native Clang:
+```
+/usr/bin/<clang-4.0|clang++-4.0>
+```
+
 We also provided the testcases inside Docker.
 
-- SPEC CPU2006
+- Location of SPEC CPU2006
 ```
-$ cd /home/testcases/spec
+/home/testcases/spec
 ```
 To reproduce, please follow the instructions [here](https://github.com/junxzm1990/ASAN--/tree/master/testcases/spec)
 
-- Chromium Project
+- Location of Chromium Project
 ```
-$ cd /home/testcases/chromium
+/home/testcases/chromium
 ```
 To reproduce, please follow the instructions [here](https://github.com/junxzm1990/ASAN--/tree/master/testcases/chromium)
 
-- Juliet Test Suite example:
+- Location of Juliet Test Suite:
 ```
-$ cd /home/testcases/juliet_test_suite
+/home/testcases/juliet_test_suite
 ```
 To reproduce, please follow the instructions [here](https://github.com/junxzm1990/ASAN--/tree/master/testcases/juliet_test_suite)
 
-- Linux Flaw Project example:
+- Location of Linux Flaw Project:
 ```
-$ cd /home/testcases/linux_flaw_project
+/home/testcases/linux_flaw_project
 ```
 To reproduce, please follow the instructions [here](https://github.com/junxzm1990/ASAN--/tree/master/testcases/linux_flaw_project)
 
