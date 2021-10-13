@@ -61,24 +61,25 @@ asanopt             latest              73092c0fa425        About an hour ago   
 ```
 We also provided the testcases inside Docker.
 
-SPEC CPU2006
+- SPEC CPU2006
 ```
 $ cd /home/testcases/spec
 ```
 To reproduce, please follow the instructions [here](https://github.com/junxzm1990/ASAN--/tree/master/testcases/spec)
 
-Chromium Project
+- Chromium Project
 ```
 $ cd /home/testcases/chromium
 ```
 To reproduce, please follow the instructions [here](https://github.com/junxzm1990/ASAN--/tree/master/testcases/chromium)
 
-Juliet Test Suite example:
+- Juliet Test Suite example:
 ```
 $ cd /home/testcases/juliet_test_suite
 ```
 To reproduce, please follow the instructions [here](https://github.com/junxzm1990/ASAN--/tree/master/testcases/juliet_test_suite)
-Linux Flaw Project example:
+
+- Linux Flaw Project example:
 ```
 $ cd /home/testcases/linux_flaw_project
 ```
