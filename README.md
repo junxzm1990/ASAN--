@@ -53,11 +53,9 @@ For more details, please refer to Section 5 "Implementation and Evaluation" in o
 - Please see [Linux Flaw Project](https://github.com/junxzm1990/ASAN--/tree/master/testcases/linux_flaw_project)
 
 ## If you do not want to build ASAN-- from scratch, you can use the docker we prepared:
-```
+```console
 $ docker build -f Dockerfile -t asanopt:latest --shm-size=100g .
 $ docker run -it asanopt:latest
-```
-```console
 REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
 asanopt             latest              73092c0fa425        About an hour ago   28GB
 ```
