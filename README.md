@@ -59,7 +59,7 @@ $ docker run -it asanopt:latest
 REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
 asanopt             latest              73092c0fa425        About an hour ago   28GB
 ```
-We also provided the testcases inside Docker. 
+We also provided the testcases inside Docker. To reproduce:
 
 Juliet Test Suite example:
 ```
