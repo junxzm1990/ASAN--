@@ -4,7 +4,10 @@ RUN apt-get update && apt-get -y install cmake \
 	tar \
 	wget \
 	sendmail \
-	vim
+	vim \
+	pkg-config \
+	fontconfig \
+	libfontconfig1-dev
 COPY llvm-4.0.0-project /home/llvm-4.0.0-project
 COPY testcases /home/testcases
 WORKDIR "/home/llvm-4.0.0-project"

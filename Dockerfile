@@ -4,6 +4,10 @@ RUN apt-get update && apt-get -y install cmake \
 	tar \
 	wget \
 	sendmail \
-	vim
+	vim \
+	pkg-config \
+	fontconfig \
+	libfontconfig1-dev
 COPY testcases /home/testcases
+
 
