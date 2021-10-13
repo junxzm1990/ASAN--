@@ -59,24 +59,32 @@ $ docker run -it asanopt:latest
 REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
 asanopt             latest              73092c0fa425        About an hour ago   28GB
 ```
-We also provided the testcases inside Docker. To reproduce:
+We also provided the testcases inside Docker.
+
+SPEC CPU2006
+```
+$ cd /home/testcases/spec
+```
+To reproduce, please follow the instructions [here](https://github.com/junxzm1990/ASAN--/tree/master/testcases/spec)
+
+Chromium Project
+```
+$ cd /home/testcases/chromium
+```
+To reproduce, please follow the instructions [here](https://github.com/junxzm1990/ASAN--/tree/master/testcases/chromium)
 
 Juliet Test Suite example:
 ```
-$ cd /home/testcases/juliet_test_suite/testcases/CWE121_Stack_Based_Buffer_Overflow/s01
-$ make && ./CWE121_s01
+$ cd /home/testcases/juliet_test_suite
 ```
-
+To reproduce, please follow the instructions [here](https://github.com/junxzm1990/ASAN--/tree/master/testcases/juliet_test_suite)
 Linux Flaw Project example:
 ```
 $ cd /home/testcases/linux_flaw_project
-$ export CC=$(readlink -f ../../llvm-4.0.0-project/ASan--Build/bin/clang) CXX=$(readlink -f ../../llvm-4.0.0-project/ASan--Build/bin/clang++)
-$ cd /CVE-2006-0539
-$ bash autorun.sh
-$ ./convert-fcrontab `perl -e 'print "pi3"x600'`
 ```
+To reproduce, please follow the instructions [here](https://github.com/junxzm1990/ASAN--/tree/master/testcases/linux_flaw_project)
 
-Please note the docker image is publicly available [here](https://hub.docker.com/r/yzhang71/asanopt), and it contains prebuilt ASAN-- and testcases. To build it from scratch, you can use Dockerfile_ASAN-- with commands below:
+Please note the [docker image](https://hub.docker.com/r/yzhang71/asanopt) is publicly available, and it contains prebuilt ASAN-- and testcases. To build it from scratch, you can use Dockerfile_ASAN-- with commands below:
 ```
 $ docker build -f Dockerfile_ASAN-- -t asanopt:latest --shm-size=100g .
 $ docker run -it asanopt:latest
