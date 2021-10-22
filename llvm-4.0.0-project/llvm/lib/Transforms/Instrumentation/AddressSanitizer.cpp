@@ -2404,9 +2404,9 @@ void AddressSanitizer::sequentialExecuteOptimization(Function &F, SmallVector<In
 
   std::set<Instruction *> deleted;
 
-  std::set<Instruction *> callIntrinsicSet; 
+  // std::set<Instruction *> callIntrinsicSet; 
 
-  ConservativeCallIntrinsicCollect(F, callIntrinsicSet);
+  // ConservativeCallIntrinsicCollect(F, callIntrinsicSet);
 
   for (auto item : AddrToInstructions) {
 
@@ -2421,8 +2421,8 @@ void AddressSanitizer::sequentialExecuteOptimization(Function &F, SmallVector<In
           continue;	
         
         // Conservative Checks added <*>
-        if (DT.dominates(inst1, inst2) && ConservativeCallIntrinsicCheck(inst1, inst2, callIntrinsicSet, DT, PDT)) {
-        // if (DT.dominates(inst1, inst2)) {
+        // if (DT.dominates(inst1, inst2) && ConservativeCallIntrinsicCheck(inst1, inst2, callIntrinsicSet, DT, PDT)) {
+        if (DT.dominates(inst1, inst2)) {
           deleted.insert(inst2);
         } 
       }
