@@ -57,15 +57,15 @@ For more details, please refer to Section 5 "Implementation and Evaluation" in o
 $ docker build -f Dockerfile -t asanopt:latest --shm-size=100g .
 $ docker run -it asanopt:latest
 REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
-asanopt             latest              73092c0fa425        About an hour ago   28GB
+asanopt             latest              8d74111c5249        About an hour ago   55GB
 ```
 Location of ASan--:
 ```
 /home/llvm-4.0.0-project/ASan--Build/bin/<clang|clang++>
 ```
-Location of native Clang:
+Location of Original Clang:
 ```
-/usr/bin/<clang-4.0|clang++-4.0>
+/home/original_llvm/ASan--Build/bin/<clang|clang++>
 ```
 
 We also provided the testcases inside Docker.
