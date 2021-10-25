@@ -63,9 +63,13 @@ Location of ASan--:
 ```
 /home/llvm-4.0.0-project/ASan--Build/bin/<clang|clang++>
 ```
-Location of Original Clang:
+Location of Self-Built LLVM/Clang:
 ```
 /home/original_llvm/ASan--Build/bin/<clang|clang++>
+```
+Location of Pre-Built LLVM/Clang:
+```
+/usr/bin/<clang-4.0|clang++-4.0>
 ```
 
 We also provided the testcases inside Docker.
