@@ -39,7 +39,10 @@ $ make -j
 ## Build Vanilla LLVM
 In case you want to run the original LLVM-4.0.0 for comparison, please run:
 ```
-$ ./vanilla_llvm_autosetup.sh
+$ cd vanilla_llvm
+$ mkdir ASan_Build && cd ASan_Build
+$ cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
+$ make -j
 ```
 ## Test Cases
 For evaluation part, we used [SPEC CPU2006 Benchmark](https://www.spec.org/cpu2006/) and [Chromium Project](https://www.chromium.org/Home) to evaluate the runtime performance, then utilized [Juliet Test Suite](https://samate.nist.gov/SRD/testsuite.php) and [Linux Flaw Project](https://github.com/mudongliang/LinuxFlaw) to evaluate the bug detection capability. 
