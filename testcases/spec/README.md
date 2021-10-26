@@ -10,4 +10,7 @@ $ cd cpu2006
 ```
 ~/cpu2006 $ CC=../../../llvm-4.0.0-project/ASan--Build/bin/clang CXX=../../../llvm-4.0.0-project/ASan--Build/bin/clang++ ./run_asan--.sh asan-- <test|train|ref> <int|fp>
 ```
-
+4. To run multiple rounds, please set number "X" to "-n". For example, run 3 rounds:
+```
+~/cpu2006 $ CC=../../../llvm-4.0.0-project/ASan--Build/bin/clang CXX=../../../llvm-4.0.0-project/ASan--Build/bin/clang++ ./run_asan--.sh asan-- <test|train|ref> <int|fp> -n 3
+```
