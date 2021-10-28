@@ -21,6 +21,7 @@ $ bash auto_wrap.sh
 ```
 4. Start fuzzing, Weee!\
 For each software, we have prepared the fuzzing script in "fuzzing_script". Here is an example to fuzz program "nm".
+
 For ASan--FuZZan Version:
 ```
 ./afl-2.52b/afl-fuzz -S nm_afl -i ./afl-2.52b/testcases/others/elf/ -o ./eval/nm -m none -- libshrink/prelink-nm/nm-new @@
