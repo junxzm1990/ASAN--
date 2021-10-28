@@ -10,7 +10,7 @@ RUN apt-get update && apt-get -y install cmake \
 	libfontconfig1-dev
 COPY llvm-4.0.0-project /home/llvm-4.0.0-project
 COPY testcases /home/testcases
-COPY original_llvm /home/original_llvm
+COPY vanilla_llvm /home/vanilla_llvm
 WORKDIR "/home/llvm-4.0.0-project"
 RUN mkdir ASan--Build
 WORKDIR "/home/llvm-4.0.0-project/ASan--Build"

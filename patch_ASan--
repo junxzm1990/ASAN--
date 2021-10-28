@@ -1,0 +1,93 @@
+diff --git a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_allocator.cc b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_allocator.cc
+index ee9b1a6a0..e5fe37eca 100644
+--- a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_allocator.cc
++++ b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_allocator.cc
+@@ -457,7 +457,8 @@ struct Allocator {
+       meta[1] = chunk_beg;
+     }
+ 
+-    m->alloc_context_id = StackDepotPut(*stack);
++    // Disable LOGGING
++    // m->alloc_context_id = StackDepotPut(*stack);
+ 
+     uptr size_rounded_down_to_granularity =
+         RoundDownTo(size, SHADOW_GRANULARITY);
+@@ -522,7 +523,8 @@ struct Allocator {
+       CHECK_EQ(m->free_tid, kInvalidTid);
+     AsanThread *t = GetCurrentThread();
+     m->free_tid = t ? t->tid() : 0;
+-    m->free_context_id = StackDepotPut(*stack);
++    // Disable LOGGING
++    // m->free_context_id = StackDepotPut(*stack);
+     // Poison the region.
+     PoisonShadow(m->Beg(),
+                  RoundUpTo(m->UsedSize(), SHADOW_GRANULARITY),
+@@ -721,7 +723,9 @@ AllocType AsanChunkView::GetAllocType() const {
+ 
+ static StackTrace GetStackTraceFromId(u32 id) {
+   CHECK(id);
+-  StackTrace res = StackDepotGet(id);
++  // Disable LOGGING
++  StackTrace res;
++  // StackTrace res = StackDepotGet(id);
+   CHECK(res.trace);
+   return res;
+ }
+diff --git a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_flags.inc b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_flags.inc
+index 4712efb86..17a7f4e77 100644
+--- a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_flags.inc
++++ b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_flags.inc
+@@ -82,7 +82,9 @@ ASAN_FLAG(bool, protect_shadow_gap, true, "If set, mprotect the shadow gap")
+ ASAN_FLAG(bool, print_stats, false,
+           "Print various statistics after printing an error message or if "
+           "atexit=1.")
+-ASAN_FLAG(bool, print_legend, true, "Print the legend for the shadow bytes.")
++// Disable LOGGING
++ASAN_FLAG(bool, print_legend, false, "Print the legend for the shadow bytes.")
++//ASAN_FLAG(bool, print_legend, true, "Print the legend for the shadow bytes.")
+ ASAN_FLAG(bool, print_scariness, false,
+           "Print the scariness score. Experimental.")
+ ASAN_FLAG(bool, atexit, false,
+diff --git a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_globals.cc b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_globals.cc
+index b72330673..c9888cfed 100644
+--- a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_globals.cc
++++ b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_globals.cc
+@@ -336,7 +336,9 @@ void __asan_unregister_image_globals(uptr *flag) {
+ void __asan_register_globals(__asan_global *globals, uptr n) {
+   if (!flags()->report_globals) return;
+   GET_STACK_TRACE_MALLOC;
+-  u32 stack_id = StackDepotPut(stack);
++  // Disable LOGGING
++  u32 stack_id = 0;
++  // u32 stack_id = StackDepotPut(stack);
+   BlockingMutexLock lock(&mu_for_globals);
+   if (!global_registration_site_vector)
+     global_registration_site_vector =
+diff --git a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_stack.h b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_stack.h
+index cc95e0f30..6d6189fbd 100644
+--- a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_stack.h
++++ b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_stack.h
+@@ -103,7 +103,9 @@ void GetStackTraceWithPcBpAndContext(BufferedStackTrace *stack, uptr max_depth,
+   GET_STACK_TRACE(kStackTraceMax, true)
+ 
+ #define GET_STACK_TRACE_MALLOC                                                 \
+-  GET_STACK_TRACE(GetMallocContextSize(), common_flags()->fast_unwind_on_malloc)
++  BufferedStackTrace stack;
++  // Disable LOGGING
++  // GET_STACK_TRACE(GetMallocContextSize(), common_flags()->fast_unwind_on_malloc)
+ 
+ #define GET_STACK_TRACE_FREE GET_STACK_TRACE_MALLOC
+ 
+diff --git a/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp b/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp
+index dca8cacd0..4fbfa2715 100644
+--- a/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp
++++ b/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp
+@@ -105,7 +105,7 @@ static const uintptr_t kRetiredStackFrameMagic = 0x45E0360E;
+ 
+ static const char *const kAsanModuleCtorName = "asan.module_ctor";
+ static const char *const kAsanModuleDtorName = "asan.module_dtor";
+-static const uint64_t kAsanCtorAndDtorPriority = 1;
++static const uint64_t kAsanCtorAndDtorPriority = 0;
+ static const char *const kAsanReportErrorTemplate = "__asan_report_";
+ static const char *const kAsanRegisterGlobalsName = "__asan_register_globals";
+ static const char *const kAsanUnregisterGlobalsName =

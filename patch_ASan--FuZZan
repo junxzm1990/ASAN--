@@ -1,0 +1,370 @@
+diff --git a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_allocator.cc b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_allocator.cc
+index ee9b1a6a0..e5fe37eca 100644
+--- a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_allocator.cc
++++ b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_allocator.cc
+@@ -457,7 +457,8 @@ struct Allocator {
+       meta[1] = chunk_beg;
+     }
+ 
+-    m->alloc_context_id = StackDepotPut(*stack);
++    // Disable LOGGING
++    // m->alloc_context_id = StackDepotPut(*stack);
+ 
+     uptr size_rounded_down_to_granularity =
+         RoundDownTo(size, SHADOW_GRANULARITY);
+@@ -522,7 +523,8 @@ struct Allocator {
+       CHECK_EQ(m->free_tid, kInvalidTid);
+     AsanThread *t = GetCurrentThread();
+     m->free_tid = t ? t->tid() : 0;
+-    m->free_context_id = StackDepotPut(*stack);
++    // Disable LOGGING
++    // m->free_context_id = StackDepotPut(*stack);
+     // Poison the region.
+     PoisonShadow(m->Beg(),
+                  RoundUpTo(m->UsedSize(), SHADOW_GRANULARITY),
+@@ -721,7 +723,9 @@ AllocType AsanChunkView::GetAllocType() const {
+ 
+ static StackTrace GetStackTraceFromId(u32 id) {
+   CHECK(id);
+-  StackTrace res = StackDepotGet(id);
++  // Disable LOGGING
++  StackTrace res;
++  // StackTrace res = StackDepotGet(id);
+   CHECK(res.trace);
+   return res;
+ }
+diff --git a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_allocator.h b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_allocator.h
+index ee28ecf98..8dd225395 100644
+--- a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_allocator.h
++++ b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_allocator.h
+@@ -138,10 +138,29 @@ const uptr kAllocatorSpace = ~(uptr)0;
+ const uptr kAllocatorSize  =  0x8000000000ULL;  // 500G
+ typedef DefaultSizeClassMap SizeClassMap;
+ # else
++#if defined(ENABLEMINSHADOW)
++const uptr kAllocatorSpace = 0x000080000000ULL; // 1G
++#else
+ const uptr kAllocatorSpace = 0x600000000000ULL;
++#endif
++
++#if defined(ENABLEMINSHADOW)
++#if defined(MIN_1G)
++const uptr kAllocatorSize  =  0x40000000ULL;  // 1G
++#elif defined(MIN_4G)
++const uptr kAllocatorSize  =  0x100000000ULL;  // 4G
++#elif defined(MIN_8G)
++const uptr kAllocatorSize  =  0x200000000ULL;  // 8G
++#elif defined(MIN_16G)
++const uptr kAllocatorSize  =  0x400000000ULL;  // 16G
++#endif
++#else
+ const uptr kAllocatorSize  =  0x40000000000ULL;  // 4T.
++#endif
++
+ typedef DefaultSizeClassMap SizeClassMap;
+ # endif
++
+ struct AP64 {  // Allocator64 parameters. Deliberately using a short name.
+   static const uptr kSpaceBeg = kAllocatorSpace;
+   static const uptr kSpaceSize = kAllocatorSize;
+diff --git a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_flags.inc b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_flags.inc
+index 4712efb86..17a7f4e77 100644
+--- a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_flags.inc
++++ b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_flags.inc
+@@ -82,7 +82,9 @@ ASAN_FLAG(bool, protect_shadow_gap, true, "If set, mprotect the shadow gap")
+ ASAN_FLAG(bool, print_stats, false,
+           "Print various statistics after printing an error message or if "
+           "atexit=1.")
+-ASAN_FLAG(bool, print_legend, true, "Print the legend for the shadow bytes.")
++// Disable LOGGING
++ASAN_FLAG(bool, print_legend, false, "Print the legend for the shadow bytes.")
++//ASAN_FLAG(bool, print_legend, true, "Print the legend for the shadow bytes.")
+ ASAN_FLAG(bool, print_scariness, false,
+           "Print the scariness score. Experimental.")
+ ASAN_FLAG(bool, atexit, false,
+diff --git a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_globals.cc b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_globals.cc
+index b72330673..c9888cfed 100644
+--- a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_globals.cc
++++ b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_globals.cc
+@@ -336,7 +336,9 @@ void __asan_unregister_image_globals(uptr *flag) {
+ void __asan_register_globals(__asan_global *globals, uptr n) {
+   if (!flags()->report_globals) return;
+   GET_STACK_TRACE_MALLOC;
+-  u32 stack_id = StackDepotPut(stack);
++  // Disable LOGGING
++  u32 stack_id = 0;
++  // u32 stack_id = StackDepotPut(stack);
+   BlockingMutexLock lock(&mu_for_globals);
+   if (!global_registration_site_vector)
+     global_registration_site_vector =
+diff --git a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_interface_internal.h b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_interface_internal.h
+index 8cd424cc0..ec416e848 100644
+--- a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_interface_internal.h
++++ b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_interface_internal.h
+@@ -22,6 +22,8 @@
+ 
+ #include "asan_init_version.h"
+ 
++#define ENABLEMINSHADOW
++
+ using __sanitizer::uptr;
+ using __sanitizer::u64;
+ using __sanitizer::u32;
+@@ -175,6 +177,11 @@ extern "C" {
+   SANITIZER_INTERFACE_ATTRIBUTE
+   extern uptr __asan_shadow_memory_dynamic_address;
+ 
++#ifdef ENABLEMINSHADOW
++  extern char* MinShadowTable;
++  extern uptr UMinShadowTable;
++#endif
++
+   // Global flag, copy of ASAN_OPTIONS=detect_stack_use_after_return
+   SANITIZER_INTERFACE_ATTRIBUTE
+   extern int __asan_option_detect_stack_use_after_return;
+@@ -182,6 +189,7 @@ extern "C" {
+   SANITIZER_INTERFACE_ATTRIBUTE
+   extern uptr *__asan_test_only_reported_buggy_pointer;
+ 
++
+   SANITIZER_INTERFACE_ATTRIBUTE void __asan_load1(uptr p);
+   SANITIZER_INTERFACE_ATTRIBUTE void __asan_load2(uptr p);
+   SANITIZER_INTERFACE_ATTRIBUTE void __asan_load4(uptr p);
+diff --git a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_internal.h b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_internal.h
+index 1dc678c0c..7eb9aafeb 100644
+--- a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_internal.h
++++ b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_internal.h
+@@ -33,6 +33,10 @@
+ # define ASAN_HAS_EXCEPTIONS 1
+ #endif
+ 
++#define ENABLEMINSHADOW
++#define MIN_16G
++#define MINSHADOWSIZE 0x20000000
++
+ // If set, values like allocator chunk size, as well as defaults for some flags
+ // will be changed towards less memory overhead.
+ #ifndef ASAN_LOW_MEMORY
+diff --git a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_mapping.h b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_mapping.h
+index d8e60a4b3..5c8a6392a 100644
+--- a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_mapping.h
++++ b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_mapping.h
+@@ -190,7 +190,13 @@ static const u64 kWindowsShadowOffset32 = 3ULL << 28;  // 0x30000000
+ #endif
+ 
+ #define SHADOW_GRANULARITY (1ULL << SHADOW_SCALE)
++
++#if defined(ENABLEMINSHADOW)
++#define MEM_TO_SHADOW(mem) (((mem) >> 3) + (UMinShadowTable)) // 1GB
++#else
+ #define MEM_TO_SHADOW(mem) (((mem) >> SHADOW_SCALE) + (SHADOW_OFFSET))
++#endif
++
+ #define SHADOW_TO_MEM(shadow) (((shadow) - SHADOW_OFFSET) << SHADOW_SCALE)
+ 
+ #define kLowMemBeg      0
+@@ -284,8 +290,15 @@ static inline bool AddrIsInShadowGap(uptr a) {
+   return a >= kShadowGapBeg && a <= kShadowGapEnd;
+ }
+ 
++static inline bool AddrIsInMinShadow(uptr a) {
++  return ((UMinShadowTable <= a) && (a <= (UMinShadowTable + MINSHADOWSIZE)));
++}
++
+ static inline bool AddrIsInMem(uptr a) {
+   PROFILE_ASAN_MAPPING();
++#ifdef ENABLEMINSHADOW 
++  return !AddrIsInMinShadow(a);
++#endif
+   return AddrIsInLowMem(a) || AddrIsInMidMem(a) || AddrIsInHighMem(a) ||
+       (flags()->protect_shadow_gap == 0 && AddrIsInShadowGap(a));
+ }
+diff --git a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_rtl.cc b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_rtl.cc
+index d9d7d7e4f..334eafb5d 100644
+--- a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_rtl.cc
++++ b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_rtl.cc
+@@ -32,10 +32,24 @@
+ #include "ubsan/ubsan_init.h"
+ #include "ubsan/ubsan_platform.h"
+ 
++#ifdef ENABLEMINSHADOW
++#include <sys/mman.h>
++#include <stddef.h>
++#include <stdio.h>
++#include <stdlib.h>
++#endif
++
+ uptr __asan_shadow_memory_dynamic_address;  // Global interface symbol.
+ int __asan_option_detect_stack_use_after_return;  // Global interface symbol.
+ uptr *__asan_test_only_reported_buggy_pointer;  // Used only for testing asan.
+ 
++#ifdef ENABLEMINSHADOW
++__attribute__((visibility("default"))) char *MinShadowTable = NULL;
++__attribute__((visibility("default"))) char *MinShadowTableInit = NULL;
++__attribute__((visibility("default"))) uptr UMinShadowTable;
++__attribute__((visibility("default"))) uptr UMinShadowTableEnd;
++#endif
++
+ namespace __asan {
+ 
+ uptr AsanMappingProfile[kAsanMappingProfileSize];
+@@ -426,6 +440,57 @@ static void PrintAddressSpaceLayout() {
+           kHighShadowBeg > kMidMemEnd);
+ }
+ 
++#ifdef ENABLEMINSHADOW
++static void MinShadow_init() {
++
++#if defined(MIN_1G)
++  const uptr TOTALSIZE_INIT = 0x2000000;
++  const uptr MINSHADOWSTART_INIT = 0x10010E000000ULL;
++  const uptr MINSHADOWSTART = 0x000110000000ULL;
++  const uptr MINSIZE = 0x22000000;
++  const uptr TOTALSIZE = 0x26400000;
++#elif defined(MIN_4G)
++  const uptr TOTALSIZE_INIT = 0x4000000;
++  const uptr MINSHADOWSTART_INIT = 0x1001C6000000ULL;
++  const uptr MINSHADOWSTART = 0x0001CA000000ULL;
++  const uptr MINSIZE = 0x39400000;
++  const uptr TOTALSIZE = 0x40680000;
++#elif defined(MIN_8G)
++  const uptr TOTALSIZE_INIT = 0x10000000;
++  const uptr MINSHADOWSTART_INIT = 0x1002BA000000ULL;
++  const uptr MINSHADOWSTART = 0x0002CA000000ULL;
++  const uptr MINSIZE = 0x59400000;
++  const uptr TOTALSIZE = 0x64680000;
++#elif defined(MIN_16G)
++  const uptr TOTALSIZE_INIT = 0x20000000;
++  const uptr MINSHADOWSTART_INIT = 0x1004AA000000ULL;
++  //const uptr MINSHADOWSTART_INIT = 0x1004c8000000;
++  const uptr MINSHADOWSTART = 0x0004CA000000ULL;
++  const uptr MINSIZE = 0x99400000;
++  const uptr TOTALSIZE = 0xAC680000;
++#endif
++
++  MinShadowTable = (char *) mmap((void*) MINSHADOWSTART, TOTALSIZE, PROT_READ |
++                                 PROT_WRITE, MAP_PRIVATE |
++                                 MAP_ANONYMOUS, -1, 0);
++
++  MinShadowTableInit = (char *) mmap((void*) MINSHADOWSTART_INIT,
++                                     TOTALSIZE_INIT, PROT_READ |
++                                     PROT_WRITE, MAP_PRIVATE |
++                                     MAP_ANONYMOUS, -1, 0);
++
++  __asan_shadow_memory_dynamic_address = reinterpret_cast<uptr>(MinShadowTable);
++  UMinShadowTable = __asan_shadow_memory_dynamic_address;
++  UMinShadowTableEnd = UMinShadowTable + MINSIZE - 1;
++
++  uptr gap_start = MEM_TO_SHADOW(UMinShadowTable);
++  uptr gap_end = MEM_TO_SHADOW(UMinShadowTableEnd);
++
++  ProtectGap(gap_start, (gap_end - gap_start));
++  fprintf(stderr, "gap_start 0x%lx, end is 0x%lx\n", gap_start, gap_end);
++}
++#endif
++
+ static void InitializeShadowMemory() {
+   // Set the shadow memory address to uninitialized.
+   __asan_shadow_memory_dynamic_address = kDefaultShadowSentinel;
+@@ -552,7 +617,11 @@ static void AsanInitInternal() {
+ 
+   DisableCoreDumperIfNecessary();
+ 
++#ifdef ENABLEMINSHADOW
++  MinShadow_init();
++#else
+   InitializeShadowMemory();
++#endif
+ 
+   AsanTSDInit(PlatformTSDDtor);
+   InstallDeadlySignalHandlers(AsanOnDeadlySignal);
+diff --git a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_stack.h b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_stack.h
+index cc95e0f30..6d6189fbd 100644
+--- a/llvm-4.0.0-project/compiler-rt/lib/asan/asan_stack.h
++++ b/llvm-4.0.0-project/compiler-rt/lib/asan/asan_stack.h
+@@ -103,7 +103,9 @@ void GetStackTraceWithPcBpAndContext(BufferedStackTrace *stack, uptr max_depth,
+   GET_STACK_TRACE(kStackTraceMax, true)
+ 
+ #define GET_STACK_TRACE_MALLOC                                                 \
+-  GET_STACK_TRACE(GetMallocContextSize(), common_flags()->fast_unwind_on_malloc)
++  BufferedStackTrace stack;
++  // Disable LOGGING
++  // GET_STACK_TRACE(GetMallocContextSize(), common_flags()->fast_unwind_on_malloc)
+ 
+ #define GET_STACK_TRACE_FREE GET_STACK_TRACE_MALLOC
+ 
+diff --git a/llvm-4.0.0-project/compiler-rt/lib/sanitizer_common/sanitizer_allocator_primary64.h b/llvm-4.0.0-project/compiler-rt/lib/sanitizer_common/sanitizer_allocator_primary64.h
+index 035d92b98..fd9e049db 100644
+--- a/llvm-4.0.0-project/compiler-rt/lib/sanitizer_common/sanitizer_allocator_primary64.h
++++ b/llvm-4.0.0-project/compiler-rt/lib/sanitizer_common/sanitizer_allocator_primary64.h
+@@ -314,7 +314,7 @@ class SizeClassAllocator64 {
+   }
+   uptr SpaceEnd() const { return  SpaceBeg() + kSpaceSize; }
+   // kRegionSize must be >= 2^32.
+-  COMPILER_CHECK((kRegionSize) >= (1ULL << (SANITIZER_WORDSIZE / 2)));
++  // COMPILER_CHECK((kRegionSize) >= (1ULL << (SANITIZER_WORDSIZE / 2)));
+   // kRegionSize must be <= 2^36, see CompactPtrT.
+   COMPILER_CHECK((kRegionSize) <= (1ULL << (SANITIZER_WORDSIZE / 2 + 4)));
+   // Call mmap for user memory with at least this size.
+diff --git a/llvm-4.0.0-project/compiler-rt/lib/sanitizer_common/sanitizer_allocator_secondary.h b/llvm-4.0.0-project/compiler-rt/lib/sanitizer_common/sanitizer_allocator_secondary.h
+index 2e98e591b..3d6439d78 100644
+--- a/llvm-4.0.0-project/compiler-rt/lib/sanitizer_common/sanitizer_allocator_secondary.h
++++ b/llvm-4.0.0-project/compiler-rt/lib/sanitizer_common/sanitizer_allocator_secondary.h
+@@ -17,6 +17,7 @@
+ // This class can (de)allocate only large chunks of memory using mmap/unmap.
+ // The main purpose of this allocator is to cover large and rare allocation
+ // sizes not covered by more efficient allocators (e.g. SizeClassAllocator64).
++#define MIN_16G
+ template <class MapUnmapCallback = NoOpMapUnmapCallback>
+ class LargeMmapAllocator {
+  public:
+@@ -39,6 +40,26 @@ class LargeMmapAllocator {
+     if (map_size < size) return ReturnNullOrDieOnBadRequest();
+     uptr map_beg = reinterpret_cast<uptr>(
+         MmapOrDie(map_size, "LargeMmapAllocator"));
++    #ifdef MIN_16G
++    if ((uptr)map_beg < 0x7fff00000000) {
++      return nullptr;
++    }
++#endif
++#ifdef MIN_8G
++    if ((uptr)map_beg < 0x7fff80000000) {
++      return nullptr;
++    }
++#endif
++#ifdef MIN_4G
++    if ((uptr)map_beg < 0x7fffe0000000) {
++      return nullptr;
++    }
++#endif
++#ifdef MIN_1G
++    if ((uptr)map_beg < 0x7ffff0000000) {
++      return nullptr;
++    }
++#endif
+     CHECK(IsAligned(map_beg, page_size_));
+     MapUnmapCallback().OnMap(map_beg, map_size);
+     uptr map_end = map_beg + map_size;
+diff --git a/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp b/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp
+index dca8cacd0..5cddebfc7 100644
+--- a/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp
++++ b/llvm-4.0.0-project/llvm/lib/Transforms/Instrumentation/AddressSanitizer.cpp
+@@ -85,7 +85,8 @@ static const uint64_t kDynamicShadowSentinel = ~(uint64_t)0;
+ static const uint64_t kIOSShadowOffset32 = 1ULL << 30;
+ static const uint64_t kIOSSimShadowOffset32 = 1ULL << 30;
+ static const uint64_t kIOSSimShadowOffset64 = kDefaultShadowOffset64;
+-static const uint64_t kSmallX86_64ShadowOffset = 0x7FFF8000;  // < 2G.
++// static const uint64_t kSmallX86_64ShadowOffset = 0x7FFF8000;  // < 2G.
++static const uint64_t kSmallX86_64ShadowOffset = 0x0004CA000000ULL;
+ static const uint64_t kLinuxKasan_ShadowOffset64 = 0xdffffc0000000000;
+ static const uint64_t kPPC64_ShadowOffset64 = 1ULL << 41;
+ static const uint64_t kSystemZ_ShadowOffset64 = 1ULL << 52;
+@@ -105,7 +106,7 @@ static const uintptr_t kRetiredStackFrameMagic = 0x45E0360E;
+ 
+ static const char *const kAsanModuleCtorName = "asan.module_ctor";
+ static const char *const kAsanModuleDtorName = "asan.module_dtor";
+-static const uint64_t kAsanCtorAndDtorPriority = 1;
++static const uint64_t kAsanCtorAndDtorPriority = 0;
+ static const char *const kAsanReportErrorTemplate = "__asan_report_";
+ static const char *const kAsanRegisterGlobalsName = "__asan_register_globals";
+ static const char *const kAsanUnregisterGlobalsName =

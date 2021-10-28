@@ -47,7 +47,26 @@ $ make -j
 ## Test Cases
 For evaluation part, we used [SPEC CPU2006 Benchmark](https://www.spec.org/cpu2006/) and [Chromium Project](https://www.chromium.org/Home) to evaluate the runtime performance, then utilized [Juliet Test Suite](https://samate.nist.gov/SRD/testsuite.php) and [Linux Flaw Project](https://github.com/mudongliang/LinuxFlaw) to evaluate the bug detection capability. 
 
-For more details, please refer to Section 5 "Implementation and Evaluation" in our paper. 
+For more details, please refer to Section 5 "Implementation and Evaluation" in our paper.
+
+## Fuzzing
+For fuzzing part, we implemented two versions. ASan-- Version and integrating FuZZan Version. Please run two patches below before starting fuzzing process:
+```
+$ patch -p1 < patch_ASan--FuZZan
+$ cd llvm-4.0.0-project
+$ mkdir ASan--Build && cd ASan--Build
+$ cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
+$ make -j
+```
+Or
+
+```
+$ patch -p1 < patch_ASan--
+$ cd llvm-4.0.0-project
+$ mkdir ASan--Build && cd ASan--Build
+$ cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
+$ make -j
+```
 
 ### Reproduce Experiment Instuctions
 - Please see [SPEC CPU2006](https://github.com/junxzm1990/ASAN--/tree/master/testcases/spec)
