@@ -9,7 +9,7 @@ cd libshrink
 ./build.sh
 ```
 3. Build fuzzing target softwares:\
-For each program, we have prepared an "auto_build.sh" script under the source code file. Here is an example to build binutils-2.32.
+For each program, we have prepared an "auto_build.sh" script under the source code file. Here is an example to build "binutils-2.32":
 ```
 $ cd binutils-2.32
 $ bash auto_build.sh
