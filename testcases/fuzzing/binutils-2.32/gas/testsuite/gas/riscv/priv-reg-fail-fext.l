@@ -1,0 +1,6 @@
+.*Assembler messages:
+#...
+.*Warning: invalid CSR `fflags' for the current ISA
+.*Warning: invalid CSR `frm' for the current ISA
+.*Warning: invalid CSR `fcsr' for the current ISA
+#...

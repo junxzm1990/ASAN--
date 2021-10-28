@@ -1,0 +1,13 @@
+./afl-2.52b/afl-fuzz -S objdump_afl -i ./afl-2.52b/testcases/others/elf/ -o ./eval/objdump -m none -- libshrink/prelink-objdump/objdump -a @@
+
+./afl-2.52b/afl-fuzz -S nm_afl -i ./afl-2.52b/testcases/others/elf/ -o ./eval/nm -m none -- libshrink/prelink-nm/nm-new @@
+
+./afl-2.52b/afl-fuzz -S size_afl -i ./afl-2.52b/testcases/others/elf/ -o ./eval/size -m none -- libshrink/prelink-size/size @@
+
+./afl-2.52b/afl-fuzz -S libpng_afl -i ./afl-2.52b/testcases/images/png/ -o ./eval/libpng -m none -- libshrink/prelink-libpng/pngfix @@
+
+./afl-2.52b/afl-fuzz -S tcpdump_afl -i ./afl-2.52b/testcases/others/pcap/ -o ./eval/tcpdump -m none -- libshrink/prelink-tcpdump/tcpdump -n -e -r @@
+
+./afl-2.52b/afl-fuzz -S file_afl -i ./afl-2.52b/testcases/others/elf/ -o ./eval/file -m none -- libshrink/prelink-file/file -m ./file/ASan_Srk/magic/magic.mgc @@
+
+./afl-2.52b/afl-fuzz -S cxxfilt_afl -i ./afl-2.52b/testcases/others/elf/ -o ./eval/cxxfilt -m none -- libshrink/prelink-cxxfilt/cxxfilt -n

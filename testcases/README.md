@@ -29,5 +29,10 @@ The GitHub repo is https://github.com/mudongliang/LinuxFlaw
 
 Please refer to [linux_flaw_project](https://github.com/junxzm1990/ASAN--/tree/master/testcases/linux_flaw_project) above for detailed reproduce instructions.
 
+## Fuzzing
+
+For Fuzzing evaluation, we provided 7 widely used real-world software, which are [objdump](https://www.gnu.org/software/binutils/), [nm](https://www.gnu.org/software/binutils/), [size](https://www.gnu.org/software/binutils/), [cxxfilt](https://www.gnu.org/software/binutils/), [libpng](http://www.libpng.org/pub/png/libpng.html), [file](https://github.com/file/file), [tcpdump](https://www.tcpdump.org/).
+
+Please refer to [fuzzing]() above for detailed fuzzing instructions.
 
 
