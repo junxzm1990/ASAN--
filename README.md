@@ -73,7 +73,7 @@ $ mkdir ASan--Build && cd ASan--Build
 $ cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
 $ make -j
 ```
-
+Please refer to [fuzzing](https://github.com/junxzm1990/ASAN--/tree/master/testcases/fuzzing)for detailed fuzzing instructions.
 ## If you do not want to build ASAN-- from scratch, you can use the docker we prepared:
 ```console
 $ docker build -f Dockerfile -t asanopt:latest --shm-size=100g .
