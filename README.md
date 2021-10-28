@@ -49,8 +49,14 @@ For evaluation part, we used [SPEC CPU2006 Benchmark](https://www.spec.org/cpu20
 
 For more details, please refer to Section 5 "Implementation and Evaluation" in our paper.
 
-## Fuzzing
-For fuzzing part, we implemented two versions. ASan-- Version and integrating FuZZan Version. Please run two patches below before starting fuzzing process:
+### Reproduce Experiment Instuctions
+- Please see [SPEC CPU2006](https://github.com/junxzm1990/ASAN--/tree/master/testcases/spec)
+- Please see [Chromium Project](https://github.com/junxzm1990/ASAN--/tree/master/testcases/chromium)
+- Please see [Juliet Test Suite](https://github.com/junxzm1990/ASAN--/tree/master/testcases/juliet_test_suite)
+- Please see [Linux Flaw Project](https://github.com/junxzm1990/ASAN--/tree/master/testcases/linux_flaw_project)
+
+### Fuzzing
+For fuzzing part, we implemented two versions. ASan-- integrating FuZZan version and only ASan-- version. Please run the patches separately below before starting each fuzzing process:
 ```
 $ patch -p1 < patch_ASan--FuZZan
 $ cd llvm-4.0.0-project
@@ -67,12 +73,6 @@ $ mkdir ASan--Build && cd ASan--Build
 $ cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
 $ make -j
 ```
-
-### Reproduce Experiment Instuctions
-- Please see [SPEC CPU2006](https://github.com/junxzm1990/ASAN--/tree/master/testcases/spec)
-- Please see [Chromium Project](https://github.com/junxzm1990/ASAN--/tree/master/testcases/chromium)
-- Please see [Juliet Test Suite](https://github.com/junxzm1990/ASAN--/tree/master/testcases/juliet_test_suite)
-- Please see [Linux Flaw Project](https://github.com/junxzm1990/ASAN--/tree/master/testcases/linux_flaw_project)
 
 ## If you do not want to build ASAN-- from scratch, you can use the docker we prepared:
 ```console
