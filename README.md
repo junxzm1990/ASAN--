@@ -56,7 +56,7 @@ For more details, please refer to Section 5 "Implementation and Evaluation" in o
 - Please see [Linux Flaw Project](https://github.com/junxzm1990/ASAN--/tree/master/testcases/linux_flaw_project)
 
 ### Fuzzing
-For fuzzing part, we implemented two versions. ASan-- integrating FuZZan version and only ASan-- version. Please run the patches separately below before starting each fuzzing process:
+For fuzzing part, we implemented two versions. ASan-- integrating FuZZan version and only ASan-- version. Please run patches below separately before starting each fuzzing process:
 ```
 $ patch -p1 < patch_ASan--FuZZan
 $ cd llvm-4.0.0-project
