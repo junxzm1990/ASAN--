@@ -20,8 +20,8 @@ $ cd libshrink
 $ bash auto_wrap.sh
 ```
 5. Start fuzzing, Weee!\
-For each software, we have prepared the fuzzing script in "fuzzing_script". Here is an example to fuzz "nm":
+For each software, we have prepared the fuzzing script in "fuzzing_script". Here is an example to fuzz program "nm":
 ```
 ./afl-2.52b/afl-fuzz -S nm_afl -i ./afl-2.52b/testcases/others/elf/ -o ./eval/nm -m none -- libshrink/prelink-nm/nm-new @@
-```\
-The results will be under "eval" folder.
+```
+6. All fuzzing results will be under "eval" folder.
