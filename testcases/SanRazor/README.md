@@ -65,7 +65,7 @@ gem install shellwords
 3.1. Initialization by the following code:
 ```
 export SR_STATE_PATH="$(pwd)/Cov"
-export SR_WORK_PATH="<path-to-your-coverage.sh>/coverage.sh"
+export SR_WORK_PATH="$(pwd)/coverage.sh"
 SanRazor-clang -SR-init
 ```
 
