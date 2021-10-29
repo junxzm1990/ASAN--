@@ -1,6 +1,6 @@
 ## Fuzzing Test Cases
 
-###ASan--FuZZan Model
+### ASan--FuZZan Model
 1. Build afl-2.52b and set ASan--:
 ```
 $ bash build_afl.sh
@@ -28,7 +28,7 @@ For each software, we have prepared the fuzzing script in "fuzzing_script". Here
 ```
 6. All fuzzing results will be under "eval" folder.
 
-###ASan-- Model
+### ASan-- Model
 1. Build afl-2.52b and set ASan--:
 ```
 $ bash build_afl.sh
