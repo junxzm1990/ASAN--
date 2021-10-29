@@ -11,7 +11,7 @@ cd libshrink
 ./build.sh
 ```
 3. Build fuzzing target softwares:\
-For each program, we have prepared an `auto_build.sh` script under the source code file. Here is an example to build "binutils-2.32":
+For each program, we have prepared an `auto_build.sh` script under the source code file. Here is an example to build `binutils-2.32`:
 ```
 $ cd binutils-2.32
 $ bash auto_build.sh
@@ -22,7 +22,7 @@ $ cd libshrink
 $ bash auto_wrap.sh
 ```
 5. Start fuzzing, Weee!\
-For each software, we have prepared the fuzzing script in `fuzzing_script`. Here is an example to fuzz program `nm`.
+For each software, we have prepared the fuzzing script in `fuzzing_script`. Here is an example to fuzz program `nm-new`.
 ```
 ./afl-2.52b/afl-fuzz -S nm_afl -i ./afl-2.52b/testcases/others/elf/ -o ./eval/nm -m none -- ./libshrink/prelink-nm/nm-new @@
 ```
@@ -34,13 +34,13 @@ For each software, we have prepared the fuzzing script in `fuzzing_script`. Here
 $ bash build_afl.sh
 ```
 3. Build fuzzing target softwares:\
-For each program, we have prepared an `auto_build.sh` script under the source code file. Here is an example to build "binutils-2.32":
+For each program, we have prepared an `auto_build.sh` script under the source code file. Here is an example to build `binutils-2.32`:
 ```
 $ cd binutils-2.32
 $ bash auto_build.sh
 ```
 4. Start fuzzing, Weee!\
-For each software, we have prepared the fuzzing script in `fuzzing_script`. Here is an example to fuzz program `nm`.
+For each software, we have prepared the fuzzing script in `fuzzing_script`. Here is an example to fuzz program `nm-new`.
 ```
 ./afl-2.52b/afl-fuzz -S nm_afl -i ./afl-2.52b/testcases/others/elf/ -o ./eval/nm -m none -- ./binutils-2.32/ASan_Srk/binutils/nm-new @@
 ```
