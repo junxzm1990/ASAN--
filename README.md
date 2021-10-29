@@ -78,7 +78,7 @@ Please see [Fuzzing](https://github.com/junxzm1990/ASAN--/tree/master/testcases/
 ### SanRazor
 We also include the comparison between ASan-- and SanRazor on SPEC CPU2006 in our evaluation. 
 
-Please see [SanRazor](https://github.com/junxzm1990/ASAN--/tree/master/testcases/SanRazor) above for detailed building instructions.
+Please see [SanRazor](https://github.com/junxzm1990/ASAN--/tree/master/testcases/SanRazor) for detailed building instructions.
 
 ## If you do not want to build ASAN-- from scratch, you can use the docker we prepared:
 ```console
