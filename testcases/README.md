@@ -38,5 +38,5 @@ SanRazor is a sanitizer check reduction tool aiming to incur little overhead whi
 
 The GitHub repo is https://github.com/SanRazor-repo/SanRazor
 
-Please refer to [SanRazor](https://github.com/junxzm1990/ASAN--/tree/master/testcases/SanRazor) above for detailed detailed building instructions.
+Please refer to [SanRazor](https://github.com/junxzm1990/ASAN--/tree/master/testcases/SanRazor) above for detailed building instructions.
 
