@@ -74,6 +74,12 @@ $ cmake -DLLVM_ENABLE_PROJECTS="clang;compiler-rt" -G "Unix Makefiles" ../llvm
 $ make -j
 ```
 Please see [Fuzzing](https://github.com/junxzm1990/ASAN--/tree/master/testcases/fuzzing) for detailed fuzzing instructions.
+
+### SanRazor
+We also include the comparison between ASan-- and SanRazor on SPEC CPU2006 in our evaluation. 
+
+Please see [SanRazor](https://github.com/junxzm1990/ASAN--/tree/master/testcases/SanRazor) above for detailed building instructions.
+
 ## If you do not want to build ASAN-- from scratch, you can use the docker we prepared:
 ```console
 $ docker build -f Dockerfile -t asanopt:latest --shm-size=100g .
