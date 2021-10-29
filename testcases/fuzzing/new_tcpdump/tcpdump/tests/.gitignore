@@ -1,0 +1,5 @@
+.failed
+.passed
+DIFF
+NEW
+*.out.raw.stderr
