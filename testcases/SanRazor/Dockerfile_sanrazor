@@ -1,0 +1,17 @@
+FROM ubuntu:18.04
+RUN apt-get -qqy update  && \
+    apt-get -qqy install wget xz-utils cmake make g++ python3 python3-distutils sudo ruby-full
+RUN gem install bundler
+RUN gem install fileutils
+RUN gem install parallel
+RUN gem install shellwords
+COPY download_llvm9.sh /download_llvm9.sh
+COPY build_and_install_llvm9.sh /build_and_install_llvm9.sh
+RUN /download_llvm9.sh
+COPY src/SRPass /llvm/lib/Transforms/SRPass
+RUN sed -i '7i add_subdirectory(SRPass)' /llvm/lib/Transforms/CMakeLists.txt
+RUN sed -i "s/static_assert(SmallSize <= .*, \"SmallSize should be small\");/static_assert(SmallSize <= 1024, \"SmallSize should be small\");/g" /llvm/include/llvm/ADT/SmallPtrSet.h
+RUN chmod -R 777 /build_and_install_llvm9.sh
+RUN /build_and_install_llvm9.sh
+COPY data/cve/auto-asan /auto-asan
+COPY test/test_autotrace_asan.sh /test_autotrace_asan.sh

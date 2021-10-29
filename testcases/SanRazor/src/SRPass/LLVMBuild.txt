@@ -1,0 +1,8 @@
+; This file is part of ASAP.
+; Please see LICENSE.txt for copyright and licensing information.
+
+[component_0]
+type = Library
+name = SRPass
+parent = Transforms
+required_libraries = Analysis Core Support Target
