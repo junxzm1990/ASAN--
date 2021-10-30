@@ -40,7 +40,7 @@ gn args out/ASan--
 9. Set build arguments.
 ```
 is_clang = true
-clang_base_path = "../../../../../../llvm-4.0.0-project/ASan--Build"
+clang_base_path = "/Path/To/llvm-4.0.0-project/ASan--Build"
 is_asan = true
 is_debug = ture
 symbol_level = 1
