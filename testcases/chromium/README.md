@@ -26,6 +26,7 @@ $ cd src && git checkout tags/58.0.3003.0 -b 58
 ~/chromium/src $ COMMIT_DATE=$(git log -n 1 --pretty=format:%ci)
 ~/chromium/src $ echo $COMMIT_DATE
 2017-02-05 04:02:37 +0000
+
 # Check out depot_tools revision from the same time:
 ~/depot_tools $ git checkout $(git rev-list -n 1 --before="$COMMIT_DATE" main)
 Previous HEAD position was 0f5bd4f... Roll recipe dependencies (trivial).
