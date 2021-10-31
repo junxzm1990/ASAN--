@@ -18,19 +18,25 @@ $ fetch --nohooks chromium
 ```
 5. Check out version 58 of target chromium.
 ```
-$ git checkout tags/58.0.3003.0 -b 58
+$ cd src && git checkout tags/58.0.3003.0 -b 58
 ```
 6. Check out a version of depot_tools from around the same time as the target revision.
 ```
 # Get date of current revision:
+```
 ~/chromium/src $ COMMIT_DATE=$(git log -n 1 --pretty=format:%ci)
-
+~/chromium/src $ echo $COMMIT_DATE
+2017-02-05 04:02:37 +0000
+```
 # Check out depot_tools revision from the same time:
 ~/depot_tools $ git checkout $(git rev-list -n 1 --before="$COMMIT_DATE" main)
+Previous HEAD position was 0f5bd4f... Roll recipe dependencies (trivial).
+HEAD is now at 85adaa3... Roll recipe dependencies (trivial).
 ~/depot_tools $ export DEPOT_TOOLS_UPDATE=0
 ```
-7. Checkout all the submodules at their branch DEPS revisions.
+7. Go back to `src` folder and checkout all the submodules at their branch DEPS revisions.
 ```
+$ export DEPOT_TOOLS_UPDATE=0
 $ gclient sync -D --force --reset --with_branch_heads
 ```
 8. To create a build directory, run:
