@@ -21,7 +21,6 @@ $ fetch --nohooks chromium
 $ cd src && git checkout tags/58.0.3003.0 -b 58
 ```
 6. Check out a version of depot_tools from around the same time as the target revision.
-```
 # Get date of current revision:
 ```
 ~/chromium/src $ COMMIT_DATE=$(git log -n 1 --pretty=format:%ci)
