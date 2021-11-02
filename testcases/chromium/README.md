@@ -10,7 +10,7 @@ $ export PATH="$PATH:/path/to/depot_tools"
 ```
 3. Create a chromium directory for the checkout and change to it
 ```
-$ mkdir ~/chromium && cd ~/chromium
+$ mkdir chromium && cd chromium
 ```
 4. Run the fetch tool from depot_tools to check out the code and its dependencies.
 ```
@@ -58,6 +58,9 @@ ninja -C out/ASan-- chrome
 ```
 ## Performance Benchmarks
 1. To run time-based benchmarks:
+```
+export ASAN_OPTIONS=halt_on_error=0:detect_odr_violation=0:detect_container_overflow=0
+```
 - Sunspider:
 ```
 $ ./chrome https://webkit.org/perf/sunspider-0.9.1/sunspider-0.9.1/driver.html
@@ -72,6 +75,9 @@ $ ./chrome https://testdrive-archive.azurewebsites.net/Performance/LiteBrite/
 ```
 
 2. To run score-based benchmarks:
+```
+export ASAN_OPTIONS=halt_on_error=0:detect_odr_violation=0:detect_container_overflow=0
+```
 - Octane:
 ```
 $ ./chrome https://chromium.github.io/octane/

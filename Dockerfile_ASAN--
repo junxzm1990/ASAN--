@@ -1,4 +1,4 @@
-FROM ubuntu:18.04
+FROM ubuntu:16.04
 RUN apt-get update && apt-get -y install cmake \
 	clang-4.0 \
 	tar \
@@ -6,12 +6,13 @@ RUN apt-get update && apt-get -y install cmake \
 	sendmail \
 	vim \
 	git \
+	patch \
 	pkg-config \
 	fontconfig \
 	libfontconfig1-dev
 COPY llvm-4.0.0-project /home/llvm-4.0.0-project
 COPY testcases /home/testcases
-COPY vanilla_llvm /home/vanilla_llvm
+COPY original_llvm /home/original_llvm
 WORKDIR "/home/llvm-4.0.0-project"
 RUN mkdir ASan--Build
 WORKDIR "/home/llvm-4.0.0-project/ASan--Build"

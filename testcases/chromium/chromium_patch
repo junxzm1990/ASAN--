@@ -1,0 +1,44 @@
+diff --git a/build/config/compiler/BUILD.gn b/build/config/compiler/BUILD.gn
+index 79723f6cc76c..d673a367a71f 100644
+--- a/build/config/compiler/BUILD.gn
++++ b/build/config/compiler/BUILD.gn
+@@ -1036,7 +1036,7 @@ config("chromium_code") {
+   } else {
+     cflags = [ "-Wall" ]
+     if (treat_warnings_as_errors) {
+-      cflags += [ "-Werror" ]
++      #cflags += [ "-Werror" ]
+     }
+     if (is_clang) {
+       # Enable -Wextra for chromium_code when we control the compiler.
+@@ -1094,7 +1094,7 @@ config("no_chromium_code") {
+     # GCC may emit unsuppressible warnings so don't add -Werror for no chromium
+     # code. crbug.com/589724
+     if (treat_warnings_as_errors && is_clang) {
+-      cflags += [ "-Werror" ]
++      #cflags += [ "-Werror" ]
+     }
+     if (is_clang && !is_nacl) {
+       # TODO(thakis): Remove !is_nacl once
+diff --git a/build/config/sanitizers/BUILD.gn b/build/config/sanitizers/BUILD.gn
+index 3768cb935538..b38d8a44043b 100644
+--- a/build/config/sanitizers/BUILD.gn
++++ b/build/config/sanitizers/BUILD.gn
+@@ -155,7 +155,7 @@ config("default_sanitizer_ldflags") {
+   if (is_posix) {
+     ldflags = []
+     if (is_asan) {
+-      ldflags += [ "-fsanitize=address" ]
++      ldflags += [ "-fsanitize=address", "-fsanitize-recover=address", ]
+     }
+     if (is_lsan) {
+       ldflags += [ "-fsanitize=leak" ]
+@@ -263,7 +263,7 @@ config("common_sanitizer_flags") {
+ config("asan_flags") {
+   cflags = []
+   if (is_asan) {
+-    cflags += [ "-fsanitize=address" ]
++    cflags += [ "-fsanitize=address", "-fsanitize-recover=address", ]
+     if (!asan_globals) {
+       cflags += [
+         "-mllvm",
