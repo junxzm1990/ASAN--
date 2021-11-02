@@ -38,21 +38,25 @@ HEAD is now at 85adaa3... Roll recipe dependencies (trivial).
 $ export DEPOT_TOOLS_UPDATE=0
 $ gclient sync -D --force --reset --with_branch_heads
 ```
-8. To create a build directory, run:
+8. Disable all warnings to be treated as build errors.
+```
+patch -p1 < /path/to/ASAN--/testcases/chromium/chromium_patch
+```
+9. To create a build directory, run:
 ```
 gn args out/ASan--
 ```
-9. Set build arguments.
+10. Set build arguments.
 ```
 is_clang = true
-clang_base_path = "/Path/To/llvm-4.0.0-project/ASan--Build"
+clang_base_path = "/path/to/original_llvm/ASan--Build" or "/path/to/llvm-4.0.0-project/ASan--Build"
 is_asan = true
 is_debug = ture
 symbol_level = 1
 is_component_build = true
 pdf_use_skia=true
 ```
-10. Build Chromium (the “chrome” target) with Ninja using the command:
+11. Build Chromium (the “chrome” target) with Ninja using the command:
 ```
 ninja -C out/ASan-- chrome
 ```
