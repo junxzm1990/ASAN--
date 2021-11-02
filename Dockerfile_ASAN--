@@ -5,6 +5,7 @@ RUN apt-get update && apt-get -y install cmake \
 	wget \
 	sendmail \
 	vim \
+	git \
 	pkg-config \
 	fontconfig \
 	libfontconfig1-dev
