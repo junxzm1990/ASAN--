@@ -1,4 +1,4 @@
-FROM yzhang71/asanopt:latest
+FROM yzhang71/optasan-1604:latest
 RUN apt-get update && apt-get -y install cmake \
 	clang-4.0 \
 	tar \
