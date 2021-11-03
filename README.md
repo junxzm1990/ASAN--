@@ -80,7 +80,7 @@ We also include the comparison between ASan-- and SanRazor on SPEC CPU2006 in ou
 
 Please see [SanRazor](https://github.com/junxzm1990/ASAN--/tree/master/testcases/SanRazor) for detailed building instructions.
 
-## If you do not want to build ASAN-- from scratch, you can use the docker we prepared:
+## If you do not want to build ASAN-- from scratch, you can use the dockers we prepared:
 Ubuntu 18.04 Docker:
 ```console
 $ docker build -f Dockerfile_1804 -t asanopt:latest --shm-size=100g .
