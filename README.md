@@ -134,7 +134,7 @@ To reproduce, please follow the instructions [here](https://github.com/junxzm199
 ```
 To reproduce, please follow the instructions [here](https://github.com/junxzm1990/ASAN--/tree/master/testcases/linux_flaw_project)
 
-Please note the [docker image](https://hub.docker.com/r/yzhang71/asanopt) is publicly available, and it contains prebuilt ASAN-- and testcases. To build it from scratch, you can use Dockerfile_ASAN-- with commands below:
+Please note the [docker image](https://hub.docker.com/repository/docker/yzhang71/optasan-1604) is publicly available, and it contains prebuilt ASAN-- and testcases. To build it from scratch, you can use Dockerfile_ASAN-- with commands below:
 ```
 $ docker build -f Dockerfile_ASAN-- -t asanopt:latest --shm-size=100g .
 $ docker run -it asanopt:latest
