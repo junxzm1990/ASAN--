@@ -81,11 +81,19 @@ We also include the comparison between ASan-- and SanRazor on SPEC CPU2006 in ou
 Please see [SanRazor](https://github.com/junxzm1990/ASAN--/tree/master/testcases/SanRazor) for detailed building instructions.
 
 ## If you do not want to build ASAN-- from scratch, you can use the docker we prepared:
+Ubuntu 18.04 Docker:
 ```console
-$ docker build -f Dockerfile -t asanopt:latest --shm-size=100g .
+$ docker build -f Dockerfile_1804 -t asanopt:latest --shm-size=100g .
 $ docker run -it asanopt:latest
 REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
-asanopt             latest              8d74111c5249        About an hour ago   55GB
+asanopt             latest              8d74111c5249        About an hour ago   55.4GB
+```
+Ubuntu 16.04 Docker(For building Chromium):
+```console
+$ docker build -f Dockerfile_1604 -t optasan-1604:latest --shm-size=100g .
+$ docker run -it asanopt:latest
+REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
+optasan-1604        latest              de02e86743ea        About an hour ago   55.4GB
 ```
 Location of ASan--:
 ```
