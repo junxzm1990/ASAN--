@@ -91,7 +91,7 @@ asanopt             latest              8d74111c5249        About an hour ago   
 Ubuntu 16.04 Docker(For building Chromium):
 ```console
 $ docker build -f Dockerfile_1604 -t optasan-1604:latest --shm-size=100g .
-$ docker run -it asanopt:latest
+$ docker run -it optasan-1604:latest
 REPOSITORY          TAG                 IMAGE ID            CREATED             SIZE
 optasan-1604        latest              de02e86743ea        About an hour ago   55.4GB
 ```
