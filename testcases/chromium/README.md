@@ -8,6 +8,7 @@ bash build_chromium.sh
 2. To create a build directory, run:
 ```
 cd chromium/src
+export DEPOT_TOOLS_UPDATE=0
 export PATH="$PATH:/home/testcases/chromium/depot_tools"
 gn args out/ASan--
 ```
