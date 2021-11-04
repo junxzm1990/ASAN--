@@ -9,7 +9,7 @@ $ bash build_afl.sh
 $ bash set_ASan.sh
 ```
 2. Build fuzzing target softwares:\
-For each program, we have prepared an `auto_build_ASan.sh` script under the source code file. Here is an example to build `binutils-2.32`:
+For each program, we provide an `auto_build_ASan.sh` script under source code file. Here is an example to build `binutils-2.32`:
 ```
 $ cd binutils-2.32
 $ bash auto_build_ASan.sh
