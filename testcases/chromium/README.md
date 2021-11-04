@@ -51,7 +51,7 @@ gn args out/ASan--
 is_clang = true
 clang_base_path = "/path/to/original_llvm/ASan--Build" or "/path/to/llvm-4.0.0-project/ASan--Build"
 is_asan = true
-is_debug = ture
+is_debug = true
 symbol_level = 1
 is_component_build = true
 pdf_use_skia=true
