@@ -1,7 +1,9 @@
 # Chromium Test Cases
 ## Build Chromium with ASan--
 1. Run build script:
+```
 bash build_chromium.sh
+```
 2. To create a build directory, run:
 ```
 cd chromium/src
