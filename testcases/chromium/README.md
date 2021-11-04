@@ -9,6 +9,7 @@ bash build_chromium.sh
 ```
 cd depot_tools
 export DEPOT_TOOLS_UPDATE=0
+cd ..
 cd chromium/src
 export PATH="$PATH:/home/testcases/chromium/depot_tools"
 export DEPOT_TOOLS_UPDATE=0
