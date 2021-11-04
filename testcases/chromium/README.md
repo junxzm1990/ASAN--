@@ -8,8 +8,8 @@ bash build_chromium.sh
 2. To create a build directory, run:
 ```
 cd chromium/src
-export DEPOT_TOOLS_UPDATE=0
 export PATH="$PATH:/home/testcases/chromium/depot_tools"
+export DEPOT_TOOLS_UPDATE=0
 gn args out/ASan--
 ```
 3. Set build arguments. Here is an example to build with original ASan. To build with ASan--, please using `clang_base_path = "/home/llvm-4.0.0-project/ASan--Build"`:
