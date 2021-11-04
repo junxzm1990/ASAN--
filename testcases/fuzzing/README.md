@@ -23,7 +23,7 @@ For each software, we have prepared the fuzzing script in `fuzzing_script`. Here
 ### ASan--FuZZan Model
 1. set ASan-- to compile fuzzing targets:
 ```
-$ bash auto_build_ASan--.sh
+$ bash set_ASan--.sh
 ```
 2. Build libshrink to shrink address space:
 ```
@@ -34,7 +34,7 @@ cd libshrink
 For each program, we have prepared an `auto_build_ASan--.sh` script under the source code file. Here is an example to build `binutils-2.32`:
 ```
 $ cd binutils-2.32
-$ bash auto_build.sh
+$ bash auto_build_ASan--.sh
 ```
 4. Reduce the address space for each fuzzing target:
 ```
