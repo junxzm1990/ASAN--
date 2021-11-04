@@ -1,3 +1,18 @@
+For ASan Version:
+./afl-2.52b/afl-fuzz -S objdump_afl_asan -i ./afl-2.52b/testcases/others/elf/ -o ./eval/objdump -m none -- ./binutils-2.32/ASan/binutils/objdump -a @@
+
+./afl-2.52b/afl-fuzz -S nm_afl_asan -i ./afl-2.52b/testcases/others/elf/ -o ./eval/nm -m none -- ./binutils-2.32/ASan/binutils/nm-new @@
+
+./afl-2.52b/afl-fuzz -S size_afl_asan -i ./afl-2.52b/testcases/others/elf/ -o ./eval/size -m none -- ./binutils-2.32/ASan/binutils/size @@
+
+./afl-2.52b/afl-fuzz -S libpng_afl_asan -i ./afl-2.52b/testcases/images/png/ -o ./eval/libpng -m none -- ./libpng/ASan/pngfix @@
+
+./afl-2.52b/afl-fuzz -S tcpdump_afl_asan -i ./afl-2.52b/testcases/others/pcap/ -o ./eval/tcpdump -m none -- ./new_tcpdump/tcpdump/ASan/tcpdump -n -e -r @@
+
+./afl-2.52b/afl-fuzz -S file_afl_asan -i ./afl-2.52b/testcases/others/elf/ -o ./eval/file -m none -- ./file/ASan/src/file -m ./file/ASan/magic/magic.mgc @@
+
+./afl-2.52b/afl-fuzz -S cxxfilt_afl_asan -i ./afl-2.52b/testcases/others/elf/ -o ./eval/cxxfilt -m none -- ./binutils-2.32/ASan/binutils/cxxfilt -n
+
 For ASan--FuZZan Version:
 ./afl-2.52b/afl-fuzz -S objdump_afl -i ./afl-2.52b/testcases/others/elf/ -o ./eval/objdump -m none -- ./libshrink/prelink-objdump/objdump -a @@
 
@@ -26,3 +41,4 @@ For ASan-- Version:
 
 ./afl-2.52b/afl-fuzz -S file_afl -i ./afl-2.52b/testcases/others/elf/ -o ./eval/file -m none -- ./file/ASan_Srk/src/file -m ./file/ASan_Srk/magic/magic.mgc @@
 
+./afl-2.52b/afl-fuzz -S cxxfilt_afl -i ./afl-2.52b/testcases/others/elf/ -o ./eval/cxxfilt -m none -- ./binutils-2.32/ASan_Srk/binutils/cxxfilt -n

@@ -1,6 +1,7 @@
 # Chromium Test Cases
+- Please note that our scripts are designed for building Chromium in Docker.
 ## Build Chromium with ASan--
-1. Run build script:
+1. Run the script to download Chromium source code and install dependencies:
 ```
 bash build_chromium.sh
 ```
@@ -20,7 +21,7 @@ is_component_build = true
 pdf_use_skia=true
 clang_use_chrome_plugins = false
 ```
-11. Build Chromium (the “chrome” target) with Ninja using the command:
+4. Build Chromium (the “chrome” target) with Ninja using the command:
 ```
 ninja -C out/ASan-- chrome
 ```
