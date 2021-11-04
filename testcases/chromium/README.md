@@ -10,7 +10,7 @@ bash build_chromium.sh
 cd chromium/src
 gn args out/ASan--
 ```
-3. Set build arguments.
+3. Set build arguments. Here is an example to build with original ASan. To build with ASan--, please using `clang_base_path = "/home/llvm-4.0.0-project/ASan--Build"`:
 ```
 is_clang = true
 clang_base_path = "/home/original_llvm/ASan--Build"
