@@ -1,60 +1,22 @@
 # Chromium Test Cases
 ## Build Chromium with ASan--
-1. Clone the depot_tools repository:
+1. Run build script:
+bash build_chromium.sh
+2. To create a build directory, run:
 ```
-$ git clone https://chromium.googlesource.com/chromium/tools/depot_tools.git
-```
-2. Add depot_tools to the end of your PATH :
-```
-$ export PATH="$PATH:/path/to/depot_tools"
-```
-3. Create a chromium directory for the checkout and change to it
-```
-$ mkdir chromium && cd chromium
-```
-4. Run the fetch tool from depot_tools to check out the code and its dependencies.
-```
-$ fetch --nohooks chromium
-```
-5. Check out version 58 of target chromium.
-```
-$ cd src && git checkout tags/58.0.3003.0 -b 58
-```
-6. Check out a version of depot_tools from around the same time as the target revision.
-```
-# Get date of current revision:
-~/chromium/src $ COMMIT_DATE=$(git log -n 1 --pretty=format:%ci)
-~/chromium/src $ echo $COMMIT_DATE
-2017-02-05 04:02:37 +0000
-
-# Check out depot_tools revision from the same time:
-~/depot_tools $ git checkout $(git rev-list -n 1 --before="$COMMIT_DATE" main)
-Previous HEAD position was 0f5bd4f... Roll recipe dependencies (trivial).
-HEAD is now at 85adaa3... Roll recipe dependencies (trivial).
-~/depot_tools $ export DEPOT_TOOLS_UPDATE=0
-```
-7. Go back to `src` folder and checkout all the submodules at their branch DEPS revisions.
-```
-$ export DEPOT_TOOLS_UPDATE=0
-$ gclient sync -D --force --reset --with_branch_heads
-```
-8. Disable all warnings to be treated as build errors.
-```
-patch -p1 < /path/to/ASAN--/testcases/chromium/chromium_patch
-```
-9. To create a build directory, run:
-```
+cd chromium/src
 gn args out/ASan--
 ```
-10. Set build arguments.
+3. Set build arguments.
 ```
 is_clang = true
-clang_base_path = "/path/to/original_llvm/ASan--Build" or "/path/to/llvm-4.0.0-project/ASan--Build"
+clang_base_path = "/home/original_llvm/ASan--Build"
 is_asan = true
 is_debug = true
 symbol_level = 1
 is_component_build = true
 pdf_use_skia=true
+clang_use_chrome_plugins = false
 ```
 11. Build Chromium (the “chrome” target) with Ninja using the command:
 ```

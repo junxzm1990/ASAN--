@@ -9,6 +9,9 @@ RUN apt-get update && apt-get -y install cmake \
 	patch \
 	pkg-config \
 	fontconfig \
+	python3 \
+	gcc-4.9 \
+	software-properties-common \
 	libfontconfig1-dev
 COPY llvm-4.0.0-project /home/llvm-4.0.0-project
 COPY testcases /home/testcases

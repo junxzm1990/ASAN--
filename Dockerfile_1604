@@ -8,6 +8,9 @@ RUN apt-get update && apt-get -y install cmake \
 	git \
 	patch \
 	pkg-config \
+	python3 \
+	gcc-4.9 \
+	software-properties-common \
 	fontconfig \
 	libfontconfig1-dev
 COPY testcases /home/testcases
