@@ -10,6 +10,9 @@ RUN apt-get update && apt-get -y install cmake \
 	pkg-config \
 	python3 \
 	gcc-4.9 \
+	texinfo \
+	bison \
+	flex \
 	software-properties-common \
 	fontconfig \
 	libfontconfig1-dev
