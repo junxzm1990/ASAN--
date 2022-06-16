@@ -3017,7 +3017,7 @@ void AddressSanitizer::sequentialExecuteOptimization(Function &F, SmallVector<In
   }
 }
 
-void preprocessPotentialRemoveInsts(Function &F, std::pair<const std::pair<llvm::Value *, std::__cxx11::string>, std::set<std::pair<int64_t, llvm::Instruction *>>> &baseAddrOffsetSet, std::map<Instruction *, std::set<std::pair<Instruction *, Instruction *>>> &potentialRemoveInsts) {
+void preprocessPotentialRemoveInsts(Function &F, std::pair<const std::pair<llvm::Value *, std::string>, std::set<std::pair<int64_t, llvm::Instruction *>>> &baseAddrOffsetSet, std::map<Instruction *, std::set<std::pair<Instruction *, Instruction *>>> &potentialRemoveInsts) {
   
   auto DT = DominatorTree(F);
 
@@ -3227,7 +3227,7 @@ static bool checkConditionPairwisedNodes(llvm::DominatorTree &DT, llvm::PostDomi
   return DT.dominates(A, B) && (A->getParent() == B->getParent() || PDT.dominates(B->getParent(), A->getParent()));
 }
 
-void preprocessInstructionsMap(Function &F, std::pair<const std::pair<llvm::Value *, std::__cxx11::string>, std::set<std::pair<int64_t, llvm::Instruction *>>> &baseAddrOffsetSet, std::map<std::pair<int64_t, llvm::Instruction *>, std::vector<std::pair<int64_t, llvm::Instruction *>>> &instructionsMap) {
+void preprocessInstructionsMap(Function &F, std::pair<const std::pair<llvm::Value *, std::string>, std::set<std::pair<int64_t, llvm::Instruction *>>> &baseAddrOffsetSet, std::map<std::pair<int64_t, llvm::Instruction *>, std::vector<std::pair<int64_t, llvm::Instruction *>>> &instructionsMap) {
   
   llvm::DominatorTree DT = DominatorTree(F);
 
