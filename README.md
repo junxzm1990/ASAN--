@@ -1,6 +1,6 @@
 # ASAN--
 
-## Note: The implementation based on LLVM-12 is preliminary and not mature. If you want to run ASan-- as a baseline, please use the LLVM-4-based version.
+## Note: ASAN-- based on LLVM-12 is preliminary and not mature. If you want to run ASan-- as a baseline, please use the LLVM-4-based version.
 
 ## Overview
 AddressSanitizer (ASan) is a powerful memory error detector. It can detect various errors ranging from spatial issues like out-of-bound accesses to temporal issues like use-after-free. However, ASan has the major drawback of high runtime overhead. In order to reduce the overhead, we propose ASan--, a tool assembling a group of optimizations to reduce (or “debloat”) sanitizer checks and improve ASan’s efficiency without harming the capability, scalability, or usability.
